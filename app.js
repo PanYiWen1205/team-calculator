@@ -1,4 +1,17 @@
-// 戰鬥隊伍組建計算機 - 完整版本
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戰鬥隊伍組建計算機</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+// 戰鬥隊伍組建計算機 - 修正版本
 function TeamCalculator() {
   // 卡牌基礎數值表 - 包含突破系統
   const cardBaseStats = {
@@ -223,7 +236,7 @@ function TeamCalculator() {
   
   // 芯核和星譜狀態
   const [cardCores, setCardCores] = React.useState({});
-  const [showCoreConfig, setShowCoreConfig] = React.useState({});
+  const [showCoreConfig, setShowCoreConfig] = React.useState(false);
   const [userConstellationMatch, setUserConstellationMatch] = React.useState(0);
   const [userPerfectAlignment, setUserPerfectAlignment] = React.useState(false);
 
@@ -427,6 +440,33 @@ function TeamCalculator() {
     return bonus;
   };
 
+  // 計算虛弱增傷 - 修正版本
+  const calculateWeaknessDamage = (card, hp, atk, def) => {
+    if (!card) return 0;
+    
+    let weaknessDamage = 0;
+    
+    switch (card.type) {
+      case 'life':
+        if (hp > 8000) {
+          weaknessDamage = Math.floor((hp - 8000) / 400) * 0.2;
+        }
+        break;
+      case 'attack':
+        if (atk > 400) {
+          weaknessDamage = Math.floor((atk - 400) / 20) * 0.2;
+        }
+        break;
+      case 'defense':
+        if (def > 200) {
+          weaknessDamage = Math.floor((def - 200) / 10) * 0.2;
+        }
+        break;
+    }
+    
+    return weaknessDamage;
+  };
+
   function calculateStats(card, level, breakthrough, advancement = 0) {
     if (!card) return { hp: 0, atk: 0, def: 0, criticalDamage: 0, criticalRate: 0, weaknessDamage: 0 };
     
@@ -435,6 +475,14 @@ function TeamCalculator() {
     let hp = baseStats.hp;
     let atk = baseStats.atk;
     let def = baseStats.def;
+    
+    // 突破加成
+    if (breakthrough > 0) {
+      const breakBonus = breakthrough * 0.05;
+      hp = Math.floor(hp * (1 + breakBonus));
+      atk = Math.floor(atk * (1 + breakBonus));
+      def = Math.floor(def * (1 + breakBonus));
+    }
     
     // 使用新的屬性加成表計算暴擊率和暴傷
     let criticalDamage = 0;
@@ -449,14 +497,6 @@ function TeamCalculator() {
         criticalRate = cardAttributeBonus[card.rarity][categoryKey][advancement]?.[level] || 
                       cardAttributeBonus[card.rarity][categoryKey][advancement]?.[80] || 0;
       }
-    }
-    
-    // 突破加成
-    if (breakthrough > 0) {
-      const breakBonus = breakthrough * 0.05;
-      hp = Math.floor(hp * (1 + breakBonus));
-      atk = Math.floor(atk * (1 + breakBonus));
-      def = Math.floor(def * (1 + breakBonus));
     }
     
     // 芯核加成
@@ -478,12 +518,8 @@ function TeamCalculator() {
     criticalRate += constellationBonus.criticalRate;
     criticalDamage += constellationBonus.criticalDamage;
     
-    // 虛弱增傷計算
-    let weaknessDamage = 0;
-    if (card.type === 'attack' && atk > 400) {
-      weaknessDamage = Math.floor((atk - 400) / 20) * 0.2;
-    }
-    weaknessDamage += constellationBonus.weaknessDamage;
+    // 虛弱增傷計算 - 使用修正的計算方式
+    let weaknessDamage = calculateWeaknessDamage(card, hp, atk, def);
 
     return { hp, atk, def, criticalDamage, criticalRate, weaknessDamage };
   }
@@ -748,7 +784,7 @@ function TeamCalculator() {
   return React.createElement('div', {className: "max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen"},
     React.createElement('h1', {className: "text-3xl font-bold text-center mb-8 text-gray-800"}, "戰鬥隊伍組建計算機"),
     
-    React.createElement('div', {className: "grid grid-cols-1 xl:grid-cols-3 gap-6"},
+    React.createElement('div', {className: "grid grid-cols-1 xl:grid-cols-4 gap-6"},
       // 左側：配置與篩選
       React.createElement('div', {className: "space-y-4"},
         // 搭檔配置
@@ -928,11 +964,21 @@ function TeamCalculator() {
       ),
 
       // 中間：隊伍組建
-      React.createElement('div', {className: "space-y-4"},
+      React.createElement('div', {className: "col-span-2 space-y-4"},
         // 隊伍組建
         React.createElement('div', {className: "bg-white rounded-lg shadow-md"},
-          React.createElement('div', {className: "bg-red-500 text-white px-4 py-3 rounded-t-lg"},
-            React.createElement('h2', {className: "text-lg font-semibold"}, "隊伍組建")
+          React.createElement('div', {className: "bg-red-500 text-white px-4 py-3 rounded-t-lg flex justify-between items-center"},
+            React.createElement('h2', {className: "text-lg font-semibold"}, "隊伍組建"),
+            React.createElement('div', {className: "space-x-2"},
+              React.createElement('button', {
+                onClick: clearTeam,
+                className: "bg-red-600 text-white py-1 px-3 rounded text-sm hover:bg-red-700 transition-colors"
+              }, "清空隊伍"),
+              React.createElement('button', {
+                onClick: autoConfig,
+                className: "bg-green-600 text-white py-1 px-3 rounded text-sm hover:bg-green-700 transition-colors"
+              }, "自動配置")
+            )
           ),
           React.createElement('div', {className: "p-4 space-y-6"},
             // 日卡位
@@ -1022,14 +1068,6 @@ function TeamCalculator() {
                           React.createElement('option', {value: 2}, "2突破"),
                           React.createElement('option', {value: 3}, "3突破")
                         )
-                      ),
-                      React.createElement('div', {className: "mt-2"},
-                        React.createElement('button', {
-                          onClick: () => setShowCoreConfig(prev => ({ ...prev, [slotId]: !prev[slotId] })),
-                          className: "w-full bg-purple-500 text-white py-1 px-2 rounded text-xs hover:bg-purple-600 transition-colors"
-                        }, showCoreConfig[slotId] ? "隱藏芯核配置" : "芯核配置"),
-                        
-                        showCoreConfig[slotId] && React.createElement(CoreConfiguration, { slotId })
                       )
                     )
                   )
@@ -1124,14 +1162,6 @@ function TeamCalculator() {
                           React.createElement('option', {value: 2}, "2突破"),
                           React.createElement('option', {value: 3}, "3突破")
                         )
-                      ),
-                      React.createElement('div', {className: "mt-2"},
-                        React.createElement('button', {
-                          onClick: () => setShowCoreConfig(prev => ({ ...prev, [slotId]: !prev[slotId] })),
-                          className: "w-full bg-purple-500 text-white py-1 px-2 rounded text-xs hover:bg-purple-600 transition-colors"
-                        }, showCoreConfig[slotId] ? "隱藏芯核配置" : "芯核配置"),
-                        
-                        showCoreConfig[slotId] && React.createElement(CoreConfiguration, { slotId })
                       )
                     )
                   )
@@ -1139,29 +1169,37 @@ function TeamCalculator() {
               )
             )
           )
-        ),
-
-        // 快速操作
-        React.createElement('div', {className: "bg-white rounded-lg shadow-md"},
-          React.createElement('div', {className: "bg-gray-500 text-white px-4 py-3 rounded-t-lg"},
-            React.createElement('h2', {className: "text-lg font-semibold"}, "快速操作")
-          ),
-          React.createElement('div', {className: "p-4 space-y-3"},
-            React.createElement('button', {
-              onClick: clearTeam,
-              className: "w-full bg-red-500 text-white py-3 px-4 rounded hover:bg-red-600 transition-colors font-medium"
-            }, "清空隊伍"),
-            React.createElement('button', {
-              onClick: autoConfig,
-              className: "w-full bg-green-500 text-white py-3 px-4 rounded hover:bg-green-600 transition-colors font-medium"
-            }, "自動配置"),
-            React.createElement('div', {className: "text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded"}, "自動配置會根據當前篩選條件，選擇可用的卡片組合")
-          )
         )
       ),
 
-      // 右側：隊伍總數值
+      // 右側：芯核配置與隊伍總數值
       React.createElement('div', {className: "space-y-4"},
+        // 芯核配置
+        React.createElement('div', {className: "bg-white rounded-lg shadow-md"},
+          React.createElement('div', {className: "bg-purple-500 text-white px-4 py-3 rounded-t-lg"},
+            React.createElement('h2', {className: "text-lg font-semibold"}, "芯核配置")
+          ),
+          React.createElement('div', {className: "p-4"},
+            Object.values(teamSlots).some(Boolean) ? 
+              React.createElement('div', {className: "space-y-4"},
+                React.createElement('button', {
+                  onClick: () => setShowCoreConfig(!showCoreConfig),
+                  className: "w-full bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600 transition-colors"
+                }, showCoreConfig ? "隱藏芯核配置" : "顯示芯核配置"),
+                
+                showCoreConfig && React.createElement('div', {className: "space-y-4 max-h-96 overflow-y-auto"},
+                  Object.entries(teamSlots)
+                    .filter(([_, card]) => card !== null)
+                    .map(([slotId, card]) =>
+                      React.createElement(CoreConfiguration, { key: slotId, slotId })
+                    )
+                )
+              ) :
+              React.createElement('div', {className: "text-center text-gray-500 py-8"}, "請先配置隊伍卡片")
+          )
+        ),
+
+        // 隊伍總數值
         React.createElement('div', {className: "bg-white rounded-lg shadow-md"},
           React.createElement('div', {className: "bg-green-500 text-white px-4 py-3 rounded-t-lg"},
             React.createElement('h2', {className: "text-lg font-semibold"}, "隊伍總數值")
@@ -1197,6 +1235,11 @@ function TeamCalculator() {
                   totalStats.hp += bondBonus.hp;
                   totalStats.atk += bondBonus.atk;
                   totalStats.def += bondBonus.def;
+
+                  // 加上順星譜的虛弱增傷
+                  if (userPerfectAlignment) {
+                    totalStats.weaknessDamage += 100;
+                  }
 
                   const sunCardCount = teamCards.filter(card => card.category === '日卡').length;
                   const sunSetEffect = sunCardCount >= 2 ? "日卡套裝效果：2件套 - 暴擊傷害提高20%" : "";
@@ -1236,8 +1279,8 @@ function TeamCalculator() {
                     
                     (userConstellationMatch > 0 || userPerfectAlignment) && React.createElement('div', {className: "bg-gradient-to-r from-purple-100 to-pink-100 p-3 rounded border-l-4 border-purple-500"},
                       React.createElement('div', {className: "font-semibold text-purple-800 text-sm"}, "星譜加成"),
-                      React.createElement('div', {className: "text-purple-700 text-sm"},
-                        userConstellationMatch > 0 && `符合${userConstellationMatch}個星譜: 全屬性+${userConstellationMatch * 2}%`,
+                      React.createElement('div', {className: "text-purple-700 text-sm space-y-1"},
+                        userConstellationMatch > 0 && React.createElement('div', {}, `符合${userConstellationMatch}個星譜: 全屬性+${userConstellationMatch * 2}%`),
                         userPerfectAlignment && React.createElement('div', {}, "順星譜: 虛弱增傷+100%")
                       )
                     ),
@@ -1278,7 +1321,10 @@ function TeamCalculator() {
               React.createElement('div', {className: "text-green-700 font-medium"}, "✓ 精確屬性加成系統"),
               React.createElement('div', {className: "text-gray-600"}, "• 日卡提供暴擊傷害加成"),
               React.createElement('div', {className: "text-gray-600"}, "• 月卡提供暴擊率加成"),
-              React.createElement('div', {className: "text-gray-600"}, "• 虛弱增傷基於攻擊力計算"),
+              React.createElement('div', {className: "text-gray-600"}, "• 虛弱增傷基於卡片類型計算"),
+              React.createElement('div', {className: "text-gray-600"}, "  - 生命卡：超過8000生命後每400點+0.2%"),
+              React.createElement('div', {className: "text-gray-600"}, "  - 攻擊卡：超過400攻擊後每20點+0.2%"),
+              React.createElement('div', {className: "text-gray-600"}, "  - 防禦卡：超過200防禦後每10點+0.2%"),
               React.createElement('div', {className: "text-gray-600"}, "• 搭檔牽絆值全隊加成"),
               React.createElement('div', {className: "text-gray-600"}, "• 芯核提供額外屬性加成"),
               React.createElement('div', {className: "text-gray-600"}, "• 星譜提供全屬性百分比加成")
@@ -1292,3 +1338,6 @@ function TeamCalculator() {
 
 // 將 React 組件掛載到頁面
 ReactDOM.render(React.createElement(TeamCalculator), document.getElementById('root'));
+    </script>
+</body>
+</html>
