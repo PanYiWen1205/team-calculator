@@ -388,6 +388,22 @@ const cardAttributeBonus = {
     }
   }
 };
+  React.createElement('div', {className: "mb-2 p-1 bg-white rounded border"},
+  React.createElement('div', {className: "text-xs font-semibold text-center mb-1"}, "進階"),
+  React.createElement('select', {
+    value: cardAdvancements[slotId] || 0,
+    onChange: (e) => {
+      const advancement = parseInt(e.target.value);
+      setCardAdvancements(prev => ({ ...prev, [slotId]: advancement }));
+    },
+    className: "w-full text-xs p-1 border rounded"
+  },
+    React.createElement('option', {value: 0}, "進階0"),
+    React.createElement('option', {value: 1}, "進階1"),
+    React.createElement('option', {value: 2}, "進階2"),
+    React.createElement('option', {value: 3}, "進階3")
+  )
+)
 
   const cardDatabase = [
     { id: '001', name: '永恆封塵', category: '日卡', rarity: 5, constellation: 'blue', type: 'defense', partner: 'lishen' },
@@ -476,6 +492,7 @@ const cardAttributeBonus = {
   
   const [cardLevels, setCardLevels] = React.useState({});
   const [cardBreakthroughs, setCardBreakthroughs] = React.useState({});
+  const [cardAdvancements, setCardAdvancements] = React.useState({});
 
   // 同步職業、搭檔和武器選擇
   React.useEffect(() => {
@@ -517,42 +534,66 @@ const cardAttributeBonus = {
   };
 
   const getBaseStatsForLevel = (rarity, type, advancement, level) => {
-    const typeTable = cardBaseStats[rarity][type][advancement];
-    return typeTable[level] || typeTable[80] || { hp: 15000, atk: 800, def: 400 };
-  };
-
-  function calculateStats(card, level, breakthrough) {
-    if (!card) return { hp: 0, atk: 0, def: 0, criticalDamage: 0, criticalRate: 0, weaknessDamage: 0 };
+  const typeTable = cardBaseStats[rarity][type][advancement];
+  if (!typeTable) return { hp: 15000, atk: 800, def: 400 };
     
-    const baseStats = getBaseStatsForLevel(card.rarity, card.type, 0, level);
-    let hp = baseStats.hp;
-    let atk = baseStats.atk;
-    let def = baseStats.def;
-    
-    // 簡化的屬性加成計算
-    let criticalDamage = 0;
-    let criticalRate = 0;
-    
-    if (card.category === '日卡') {
-      criticalDamage = 8 + (level / 10); // 簡化暴傷計算
-    } else if (card.category === '月卡') {
-      criticalRate = 4 + (level / 20); // 簡化暴擊率計算
-    }
-    
-    // 突破加成
-    if (breakthrough > 0) {
-      hp = Math.floor(hp * (1 + breakthrough * 0.1));
-      atk = Math.floor(atk * (1 + breakthrough * 0.1));
-      def = Math.floor(def * (1 + breakthrough * 0.1));
-    }
-    
-    let weaknessDamage = 0;
-    if (card.type === 'attack' && atk > 400) {
-      weaknessDamage = Math.floor((atk - 400) / 20) * 0.2;
-    }
-
-    return { hp, atk, def, criticalDamage, criticalRate, weaknessDamage };
+  // 優先查找確切等級
+  if (typeTable[level]) {
+    return typeTable[level];
   }
+  
+  // 如果沒有確切等級，找最接近的較低等級
+  const availableLevels = Object.keys(typeTable)
+    .filter(key => !key.includes('+'))
+    .map(Number)
+    .filter(lvl => lvl <= level)
+    .sort((a, b) => b - a);
+  
+  if (availableLevels.length > 0) {
+    return typeTable[availableLevels[0]];
+  }
+  
+  return typeTable[80] || { hp: 15000, atk: 800, def: 400 };
+};
+
+function calculateStats(card, level, breakthrough, advancement = 0) {
+  if (!card) return { hp: 0, atk: 0, def: 0, criticalDamage: 0, criticalRate: 0, weaknessDamage: 0 };
+  
+  // 根據進階等級獲取基礎數值
+  const baseStats = getBaseStatsForLevel(card.rarity, card.type, advancement, level);
+  let hp = baseStats.hp;
+  let atk = baseStats.atk;
+  let def = baseStats.def;
+  
+  // 使用新的屬性加成表計算暴擊率和暴傷
+  let criticalDamage = 0;
+  let criticalRate = 0;
+  
+  if (cardAttributeBonus[card.rarity]) {
+    const categoryKey = card.category;
+    if (categoryKey === '日卡' && cardAttributeBonus[card.rarity][categoryKey]) {
+      criticalDamage = cardAttributeBonus[card.rarity][categoryKey][advancement]?.[level] || 0;
+    } else if (categoryKey === '月卡' && cardAttributeBonus[card.rarity][categoryKey]) {
+      criticalRate = cardAttributeBonus[card.rarity][categoryKey][advancement]?.[level] || 0;
+    }
+  }
+  
+  // 突破加成 (簡化處理)
+  if (breakthrough > 0) {
+    const breakBonus = breakthrough * 0.05; // 每突破增加5%
+    hp = Math.floor(hp * (1 + breakBonus));
+    atk = Math.floor(atk * (1 + breakBonus));
+    def = Math.floor(def * (1 + breakBonus));
+  }
+  
+  // 虛弱增傷計算
+  let weaknessDamage = 0;
+  if (card.type === 'attack' && atk > 400) {
+    weaknessDamage = Math.floor((atk - 400) / 20) * 0.2;
+  }
+
+  return { hp, atk, def, criticalDamage, criticalRate, weaknessDamage };
+}
 
   function addCard(card) {
     if (isCardInTeam(card.id)) {
@@ -841,10 +882,7 @@ const cardAttributeBonus = {
                       React.createElement('div', {className: "text-xs bg-white p-1 rounded border mb-2"},
                         React.createElement('div', {className: "font-semibold text-green-600 text-center mb-1"}, "數值"),
                         (() => {
-                          const stats = calculateStats(
-                            teamSlots[slotId], 
-                            cardLevels[slotId] || 80,
-                            cardBreakthroughs[slotId] || 0
+                          const stats = calculateStats(teamSlots[slotId], cardLevels[slotId] || 80, cardBreakthroughs[slotId] || 0, cardAdvancements[slotId] || 0)
                           );
                           return React.createElement('div', {className: "space-y-1"},
                             React.createElement('div', {}, `生命: ${stats.hp.toLocaleString()}`),
@@ -918,10 +956,7 @@ const cardAttributeBonus = {
                       React.createElement('div', {className: "text-xs bg-white p-1 rounded border mb-2"},
                         React.createElement('div', {className: "font-semibold text-green-600 text-center mb-1"}, "數值"),
                         (() => {
-                          const stats = calculateStats(
-                            teamSlots[slotId], 
-                            cardLevels[slotId] || 80,
-                            cardBreakthroughs[slotId] || 0
+                          const stats = calculateStats(teamSlots[slotId], cardLevels[slotId] || 80, cardBreakthroughs[slotId] || 0, cardAdvancements[slotId] || 0)
                           );
                           return React.createElement('div', {className: "space-y-1"},
                             React.createElement('div', {}, `生命: ${stats.hp.toLocaleString()}`),
@@ -1004,11 +1039,7 @@ const cardAttributeBonus = {
                 (() => {
                   const totalStats = teamCards.reduce((total, card) => {
                     const slotId = Object.keys(teamSlots).find(key => teamSlots[key] === card);
-                    const stats = calculateStats(
-                      card,
-                      cardLevels[slotId] || 80,
-                      cardBreakthroughs[slotId] || 0
-                    );
+                    const stats = calculateStats(teamSlots[slotId], cardLevels[slotId] || 80, cardBreakthroughs[slotId] || 0, cardAdvancements[slotId] || 0)
                     
                     return {
                       hp: total.hp + stats.hp,
