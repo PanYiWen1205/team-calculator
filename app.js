@@ -266,29 +266,45 @@ function TeamCalculator() {
     }));
   };
 
-  const getBaseStatsForLevel = (rarity, type, advancement, level) => {
-    const typeTable = cardBaseStats[rarity][type][advancement];
-    if (!typeTable) return { hp: 15000, atk: 800, def: 400 };
+const getBaseStatsForLevel = (rarity, type, advancement, level) => {
+    // 中文類型轉換為英文
+    const typeMapping = {
+        '攻擊': 'attack',
+        '防禦': 'defense', 
+        '生命': 'life'
+    };
+    
+    const englishType = typeMapping[type];
+    if (!englishType) {
+        console.log('未知的卡牌類型:', type);
+        return { hp: 0, atk: 0, def: 0 };
+    }
+    
+    const typeTable = cardBaseStats[rarity][englishType][advancement];
+    if (!typeTable) {
+        console.log('找不到數據表:', { rarity, type: englishType, advancement });
+        return { hp: 0, atk: 0, def: 0 };
+    }
     
     // 優先查找確切等級
     if (typeTable[level]) {
-      return typeTable[level];
+        return typeTable[level];
     }
     
-    // 如果沒有確切等級，找最接近的較低等級
+    // 如果還沒確切等級，找最接近的較低等級
     const availableLevels = Object.keys(typeTable)
-      .filter(key => !key.includes('+'))
-      .map(Number)
-      .filter(lvl => !isNaN(lvl) && lvl <= level)
-      .sort((a, b) => b - a);
+        .filter(key => !key.includes('+'))
+        .map(Number)
+        .filter(lvl => !isNaN(lvl) && lvl <= level)
+        .sort((a, b) => b - a);
     
     if (availableLevels.length > 0) {
-      return typeTable[availableLevels[0]];
+        return typeTable[availableLevels[0]];
     }
     
-    return typeTable[80] || { hp: 15000, atk: 800, def: 400 };
-  };
-
+    return typeTable[80] || { hp: 0, atk: 0, def: 0 };
+};
+  
   // 芯核加成計算
   const updateCoreStats = (slotId, statType, value) => {
     setCardCores(prev => ({
