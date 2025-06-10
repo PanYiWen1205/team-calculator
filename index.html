@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥隊伍組建計算機</title>
+    <title>戰鬥隊伍組建計算機 - 完整版</title>
     
     <!-- React 和相關程式庫 -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -17,14 +17,129 @@
     <style>
         body {
             font-family: 'Microsoft JhengHei', sans-serif;
+            background-color: #f8fafc;
         }
+        
+        /* 優化滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* 載入動畫 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 1.2rem;
+            color: #64748b;
+        }
+        
+        /* 卡片hover效果 */
+        .card-hover {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 數值輸入框樣式 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        /* 響應式設計調整 */
+        @media (max-width: 768px) {
+            .grid-cols-4 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            
+            .xl\\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 星譜色彩 */
+        .constellation-blue { color: #3b82f6; }
+        .constellation-green { color: #10b981; }
+        .constellation-purple { color: #8b5cf6; }
+        .constellation-yellow { color: #f59e0b; }
+        .constellation-red { color: #ef4444; }
+        .constellation-pink { color: #ec4899; }
     </style>
 </head>
 <body>
+    <!-- 載入提示 -->
+    <div id="loading" class="loading">
+        <div>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+            載入戰鬥隊伍組建計算機...
+        </div>
+    </div>
+    
     <!-- React 應用會掛載到這裡 -->
-    <div id="root"></div>
+    <div id="root" style="display: none;"></div>
     
     <!-- 載入我們的計算機程式 -->
+    <script type="text/babel">
+        // 檢查必要的庫是否載入
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+            document.getElementById('loading').innerHTML = 
+                '<div class="text-red-600">錯誤：無法載入 React 庫，請檢查網絡連接。</div>';
+        } else {
+            // 隱藏載入提示，顯示應用
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('root').style.display = 'block';
+        }
+    </script>
+    
+    <!-- 載入主應用程式 -->
     <script type="text/babel" src="app.js"></script>
+    
+    <!-- 錯誤處理 -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('應用程式錯誤:', e.error);
+            document.getElementById('loading').innerHTML = 
+                '<div class="text-red-600">應用程式載入失敗，請重新整理頁面。<br><small>' + 
+                e.error.message + '</small></div>';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('root').style.display = 'none';
+        });
+        
+        // 頁面載入完成後的檢查
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (document.getElementById('root').innerHTML.trim() === '') {
+                    document.getElementById('loading').innerHTML = 
+                        '<div class="text-orange-600">載入超時，請檢查 app.js 檔案是否存在。</div>';
+                    document.getElementById('loading').style.display = 'block';
+                }
+            }, 3000);
+        });
+    </script>
 </body>
 </html>
