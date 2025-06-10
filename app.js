@@ -267,20 +267,31 @@ function TeamCalculator() {
   };
 
 const getBaseStatsForLevel = (rarity, type, advancement, level) => {
-    // 中文類型轉換為英文
+    console.log('收到的參數:', { rarity, type, advancement, level });
+    
+    // 類型轉換 - 支援中文和英文
     const typeMapping = {
+        // 中文轉英文
         '攻擊': 'attack',
         '防禦': 'defense', 
-        '生命': 'life'
+        '生命': 'life',
+        // 英文保持不變
+        'attack': 'attack',
+        'defense': 'defense',
+        'life': 'life'
     };
     
     const englishType = typeMapping[type];
+    console.log('轉換後的類型:', englishType);
+    
     if (!englishType) {
         console.log('未知的卡牌類型:', type);
         return { hp: 0, atk: 0, def: 0 };
     }
     
     const typeTable = cardBaseStats[rarity][englishType][advancement];
+    console.log('找到的 typeTable:', typeTable);
+    
     if (!typeTable) {
         console.log('找不到數據表:', { rarity, type: englishType, advancement });
         return { hp: 0, atk: 0, def: 0 };
@@ -291,7 +302,7 @@ const getBaseStatsForLevel = (rarity, type, advancement, level) => {
         return typeTable[level];
     }
     
-    // 如果還沒確切等級，找最接近的較低等級
+    // 其他邏輯保持不變...
     const availableLevels = Object.keys(typeTable)
         .filter(key => !key.includes('+'))
         .map(Number)
