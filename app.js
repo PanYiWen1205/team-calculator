@@ -1,16 +1,3 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥隊伍組建計算機</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-    <div id="root"></div>
-    <script>
 // 戰鬥隊伍組建計算機 - 修正版本
 function TeamCalculator() {
   // 卡牌基礎數值表 - 包含突破系統
@@ -144,7 +131,7 @@ function TeamCalculator() {
     { id: '007', name: '脈脈傾言', category: '月卡', rarity: 5, constellation: 'purple', type: 'attack', partner: 'lishen' },
     { id: '008', name: '餘溫過午', category: '月卡', rarity: 5, constellation: 'red', type: 'attack', partner: 'lishen' },
     { id: '009', name: '枕月眠', category: '月卡', rarity: 5, constellation: 'yellow', type: 'life', partner: 'lishen' },
-    { id: '010', name: '沉湧過雲', category: '月卡', rarity: 5, constellation: 'blue', type: 'attack', partner: 'lishen' },
+    { id: '010', name: '沉溺溫雪', category: '月卡', rarity: 5, constellation: 'blue', type: 'attack', partner: 'lishen' },
     { id: '011', name: '掠心相授', category: '日卡', rarity: 5, constellation: 'pink', type: 'attack', partner: 'qinche' },
     { id: '012', name: '掠心奪味', category: '日卡', rarity: 5, constellation: 'pink', type: 'attack', partner: 'qinche' },
     { id: '013', name: '深淵霞暈', category: '日卡', rarity: 5, constellation: 'green', type: 'life', partner: 'qinche' },
@@ -206,12 +193,12 @@ function TeamCalculator() {
   // 芯核配置數據
   const coreMainStats = {
     core1: ['生命值%', '攻擊力%', '防禦力%', '暴擊率%', '暴擊傷害%'],
-    core2: ['生命值%', '攻擊力%', '防禦力%', '效果命中%', '效果抵抗%', '速度']
+    core2: ['生命值%', '攻擊力%', '防禦力%']
   };
 
   const coreSubStats = [
     '生命值', '生命值%', '攻擊力', '攻擊力%', '防禦力', '防禦力%', 
-    '暴擊率%', '暴擊傷害%', '效果命中%', '效果抵抗%', '速度'
+    '暴擊率%', '暴擊傷害%'
   ];
 
   // 狀態管理
@@ -1064,9 +1051,9 @@ function TeamCalculator() {
                           className: "w-full text-xs p-1 border rounded"
                         },
                           React.createElement('option', {value: 0}, "未突破"),
-                          React.createElement('option', {value: 1}, "1突破"),
-                          React.createElement('option', {value: 2}, "2突破"),
-                          React.createElement('option', {value: 3}, "3突破")
+                          React.createElement('option', {value: 1}, "60等突破"),
+                          React.createElement('option', {value: 2}, "70等突破"),
+                          React.createElement('option', {value: 3}, "80等覺醒")
                         )
                       )
                     )
@@ -1158,9 +1145,9 @@ function TeamCalculator() {
                           className: "w-full text-xs p-1 border rounded"
                         },
                           React.createElement('option', {value: 0}, "未突破"),
-                          React.createElement('option', {value: 1}, "1突破"),
-                          React.createElement('option', {value: 2}, "2突破"),
-                          React.createElement('option', {value: 3}, "3突破")
+                          React.createElement('option', {value: 1}, "60等突破"),
+                          React.createElement('option', {value: 2}, "70等突破"),
+                          React.createElement('option', {value: 3}, "80等覺醒")
                         )
                       )
                     )
@@ -1338,6 +1325,3 @@ function TeamCalculator() {
 
 // 將 React 組件掛載到頁面
 ReactDOM.render(React.createElement(TeamCalculator), document.getElementById('root'));
-    </script>
-</body>
-</html>
