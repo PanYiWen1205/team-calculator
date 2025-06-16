@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戰鬥傷害計算器 - 完整版</title>
+    
+    <!-- React 和相關程式庫 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS 樣式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* 載入動畫 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-size: 1.2rem;
+            color: white;
+        }
+        
+        /* 背景動畫 */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .animated-bg {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        /* 模塊載入狀態 */
+        .module-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .module-loaded {
+            background-color: #10b981;
+        }
+        
+        .module-error {
+            background-color: #ef4444;
+        }
+        
+        .module-loading {
+            background-color: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* 進度條 */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="animated-bg">
+    <!-- 載入提示 -->
+    <div id="loading" class="loading">
+        <div class="text-center max-w-md mx-auto p-6 bg-white bg-opacity-20 backdrop-blur-lg rounded-lg">
+            <div class="flex items-center justify-center mb-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mr-3"></div>
+                <span class="text-lg font-medium text-white">載入戰鬥傷害計算器...</span>
+            </div>
+            
+            <!-- 進度條 -->
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            
+            <div id="loadingStatus" class="text-sm text-white opacity-90">
+                <div id="currentModule" class="mb-2 font-medium">初始化中...</div>
+                <div id="moduleStatus" class="space-y-1 text-left"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- React 應用會掛載到這裡 -->
+    <div id="root" style="display: none;"></div>
+    
+    <!-- 模塊載入管理器 -->
+    <script>
+        // 模塊載入狀態管理
+        class ModuleLoader {
+            constructor() {
+                this.modules = [
+                    { name: '數據庫', file: 'js/data/cardDatabase.js', loaded: false, required: true },
+                    { name: '基礎計算', file: 'js/calculators/baseStatsCalculator.js', loaded: false, required: true },
+                    { name: '加成計算', file: 'js/calculators/bonusCalculator.js', loaded: false, required: true },
+                    { name: '隊伍計算', file: 'js/calculators/teamCalculator.js', loaded: false, required: true },
+                    { name: '芯核系統', file: 'js/systems/coreSystem.js', loaded: false, required: true },
+                    { name: '卡片工具', file: 'js/utils/cardFilters.js', loaded: false, required: true },
+                    { name: '職業工具', file: 'js/utils/partnerProfessionUtils.js', loaded: false, required: true },
+                    { name: '主程序', file: 'js/main.js', loaded: false, required: true },
+                    { name: '戰鬥計算器', file: 'battle-calculator.js', loaded: false, required: true }
+                ];
+                this.loadedCount = 0;
+                this.totalCount = this.modules.filter(m => m.required).length;
+                this.initStatusDisplay();
+            }
+            
+            initStatusDisplay() {
+                const statusDiv = document.getElementById('moduleStatus');
+                this.modules.forEach((module, index) => {
+                    if (module.required) {
+                        const div = document.createElement('div');
+                        div.id = `module-${index}`;
+                        div.innerHTML = `<span class="module-status module-loading"></span>${module.name}`;
+                        statusDiv.appendChild(div);
+                    }
+                });
+                this.updateProgress();
+            }
+            
+            updateModuleStatus(index, status) {
+                const moduleDiv = document.getElementById(`module-${index}`);
+                if (moduleDiv) {
+                    const statusSpan = moduleDiv.querySelector('.module-status');
+                    statusSpan.className = `module-status module-${status}`;
+                }
+                
+                if (status === 'loaded') {
+                    this.modules[index].loaded = true;
+                    if (this.modules[index].required) {
+                        this.loadedCount++;
+                    }
+                }
+                
+                this.updateProgress();
+                this.checkAllLoaded();
+            }
+            
+            updateProgress() {
+                const progress = (this.loadedCount / this.totalCount) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('currentModule').textContent = 
+                    `載入進度: ${this.loadedCount}/${this.totalCount} (${Math.round(progress)}%)`;
+            }
+            
+            checkAllLoaded() {
+                if (this.loadedCount === this.totalCount) {
+                    this.onAllLoaded();
+                }
+            }
+            
+            onAllLoaded() {
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('root').style.display = 'block';
+                    
+                    console.log('🎉 戰鬥傷害計算器載入完成！');
+                    console.log('💡 使用 calc.help() 查看可用API');
+                }, 500);
+            }
+            
+            onError(index, error) {
+                this.updateModuleStatus(index, 'error');
+                console.error(`模塊載入失敗: ${this.modules[index].name}`, error);
+                
+                setTimeout(() => {
+                    document.getElementById('loading').innerHTML = 
+                        `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
+                            <div class="text-red-300 mb-4 text-xl">❌ 模塊載入失敗</div>
+                            <div class="text-sm text-white opacity-90">
+                                <p>失敗的模塊: <strong>${this.modules[index].name}</strong></p>
+                                <p>文件路徑: <code>${this.modules[index].file}</code></p>
+                                <p class="mt-2">請檢查文件是否存在且路徑正確</p>
+                                <button onclick="location.reload()" 
+                                        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                    重新載入
+                                </button>
+                            </div>
+                        </div>`;
+                }, 1000);
+            }
+        }
+        
+        // 創建模塊載入器實例
+        const moduleLoader = new ModuleLoader();
+        
+        // 動態載入腳本的函數
+        function loadScript(src, index) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                
+                // 檢查是否是最後一個文件（戰鬥計算器）
+                if (src === 'battle-calculator.js') {
+                    script.type = 'text/babel';
+                }
+                
+                script.src = src;
+                script.onload = () => {
+                    moduleLoader.updateModuleStatus(index, 'loaded');
+                    resolve();
+                };
+                script.onerror = (error) => {
+                    moduleLoader.onError(index, error);
+                    reject(error);
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 按順序載入模塊
+        async function loadModules() {
+            // 檢查 React 是否載入
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                document.getElementById('loading').innerHTML = 
+                    '<div class="text-red-300 text-center">錯誤：無法載入 React 庫，請檢查網絡連接。</div>';
+                return;
+            }
+            
+            try {
+                // 載入所有模塊（按依賴順序）
+                for (let i = 0; i < moduleLoader.modules.length; i++) {
+                    await loadScript(moduleLoader.modules[i].file, i);
+                }
+                
+            } catch (error) {
+                console.error('模塊載入過程中出現錯誤:', error);
+            }
+        }
+        
+        // 頁面載入完成後開始載入模塊
+        document.addEventListener('DOMContentLoaded', loadModules);
+        
+        // 全域錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('應用程式錯誤:', e.error);
+            document.getElementById('loading').innerHTML = 
+                `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
+                    <div class="text-red-300 mb-4 text-xl">❌ 應用程式執行錯誤</div>
+                    <div class="text-sm text-white opacity-90">
+                        <p>${e.error.message}</p>
+                        <p class="mt-2">請檢查瀏覽器控制台獲取詳細錯誤信息</p>
+                        <button onclick="location.reload()" 
+                                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                            重新載入
+                        </button>
+                    </div>
+                </div>`;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('root').style.display = 'none';
+        });
+        
+        // 載入超時檢查
+        setTimeout(() => {
+            if (document.getElementById('loading').style.display !== 'none') {
+                const loadingDiv = document.getElementById('loading');
+                const currentContent = loadingDiv.innerHTML;
+                if (!currentContent.includes('錯誤') && !currentContent.includes('失敗')) {
+                    loadingDiv.innerHTML = 
+                        `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
+                            <div class="text-orange-300 mb-4 text-xl">⚠️ 載入超時</div>
+                            <div class="text-sm text-white opacity-90">
+                                <p>某些模塊載入時間過長，請檢查：</p>
+                                <ul class="list-disc list-inside mt-2 text-left">
+                                    <li>網絡連接是否正常</li>
+                                    <li>所有 JS 文件是否存在</li>
+                                    <li>文件路徑是否正確</li>
+                                </ul>
+                                <button onclick="location.reload()" 
+                                        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                    重新載入
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            }
+        }, 15000);
+        
+        // 模塊載入完成後的調試信息
+        window.addEventListener('load', function() {
+            if (window.calc) {
+                console.log('🚀 戰鬥傷害計算器 v2.0 已就緒');
+                console.log('💡 完整戰鬥傷害計算系統');
+                console.log('🎯 職業技能倍率計算');
+                console.log('📊 即時傷害預覽');
+            }
+        });
+    </script>
+</body>
+</html>
