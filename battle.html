@@ -3,335 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥傷害計算器 - 完整版</title>
+    <title>戰鬥傷害計算器</title>
     
-    <!-- React 和相關程式庫 -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS 樣式 -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 自定義樣式 -->
     <style>
         body {
             font-family: 'Microsoft JhengHei', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        
-        /* 自定義滾動條 */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        
-        /* 載入動畫 */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-size: 1.2rem;
-            color: white;
-        }
-        
-        /* 背景動畫 */
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .animated-bg {
-            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-        }
-        
-        /* 模塊載入狀態 */
-        .module-status {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .module-loaded {
-            background-color: #10b981;
-        }
-        
-        .module-error {
-            background-color: #ef4444;
-        }
-        
-        .module-loading {
-            background-color: #f59e0b;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        /* 進度條 */
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background-color: #3b82f6;
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
-<body class="animated-bg">
-    <!-- 載入提示 -->
-    <div id="loading" class="loading">
-        <div class="text-center max-w-md mx-auto p-6 bg-white bg-opacity-20 backdrop-blur-lg rounded-lg">
-            <div class="flex items-center justify-center mb-4">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mr-3"></div>
-                <span class="text-lg font-medium text-white">載入戰鬥傷害計算器...</span>
+<body>
+    <div id="loading" class="flex items-center justify-center min-h-screen">
+        <div class="bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-white text-lg">載入戰鬥計算器...</p>
+            <div id="status" class="text-white text-sm mt-2">初始化中...</div>
+        </div>
+    </div>
+
+    <div id="app" style="display: none;" class="min-h-screen p-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- 標題 -->
+            <div class="bg-white rounded-lg shadow-xl p-6 mb-6">
+                <h1 class="text-3xl font-bold text-center text-gray-800">⚔️ 戰鬥傷害計算器</h1>
+                <p class="text-center text-gray-600 mt-2">選擇搭檔、配置卡片、查看傷害</p>
             </div>
-            
-            <!-- 進度條 -->
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+
+            <!-- 配置區域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- 左側：搭檔和職業配置 -->
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">🎭 搭檔配置</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">選擇搭檔</label>
+                            <select id="partnerSelect" class="w-full p-3 border border-gray-300 rounded-lg" onchange="updateProfessions()">
+                                <option value="">請選擇搭檔</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">選擇職業</label>
+                            <select id="professionSelect" class="w-full p-3 border border-gray-300 rounded-lg" onchange="updateCards()">
+                                <option value="">請選擇職業</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">牽絆等級: <span id="bondLevelValue">25</span></label>
+                            <input type="range" id="bondLevelSlider" min="1" max="220" value="25" class="w-full" oninput="updateBondLevel(this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：卡片配置 -->
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">🃏 卡片配置</h2>
+                    <div id="cardSlots" class="space-y-3">
+                        <!-- 卡片槽位會動態生成 -->
+                    </div>
+                </div>
             </div>
-            
-            <div id="loadingStatus" class="text-sm text-white opacity-90">
-                <div id="currentModule" class="mb-2 font-medium">初始化中...</div>
-                <div id="moduleStatus" class="space-y-1 text-left"></div>
+
+            <!-- 結果顯示 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 屬性結果 -->
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">📊 隊伍屬性</h2>
+                    <div id="teamStats" class="grid grid-cols-2 gap-4">
+                        <div class="bg-red-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold text-red-600" id="hpValue">0</div>
+                            <div class="text-sm text-gray-600">生命值</div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold text-blue-600" id="atkValue">0</div>
+                            <div class="text-sm text-gray-600">攻擊力</div>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold text-green-600" id="defValue">0</div>
+                            <div class="text-sm text-gray-600">防禦力</div>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold text-purple-600" id="critValue">0%</div>
+                            <div class="text-sm text-gray-600">暴擊率</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 傷害結果 -->
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">💥 技能傷害</h2>
+                    <div id="damageResults" class="space-y-3">
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium">👊 普攻</div>
+                            <div class="text-sm text-gray-600">一般: <span id="basicNormal">0</span> | 暴擊: <span id="basicCrit">0</span></div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <div class="font-medium">⚡ 主動技</div>
+                            <div class="text-sm text-gray-600">一般: <span id="skill1Normal">0</span> | 暴擊: <span id="skill1Crit">0</span></div>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded">
+                            <div class="font-medium">🌟 共鳴技</div>
+                            <div class="text-sm text-gray-600">一般: <span id="skill2Normal">0</span> | 暴擊: <span id="skill2Crit">0</span></div>
+                        </div>
+                        <div class="bg-pink-50 p-3 rounded">
+                            <div class="font-medium">💫 誓約技</div>
+                            <div class="text-sm text-gray-600">一般: <span id="ultimateNormal">0</span> | 暴擊: <span id="ultimateCrit">0</span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- React 應用會掛載到這裡 -->
-    <div id="root" style="display: none;"></div>
-    
-    <!-- 模塊載入管理器 -->
+
+    <!-- 載入模塊 -->
     <script>
-        // 模塊載入狀態管理
-        class ModuleLoader {
-            constructor() {
-                this.modules = [
-                    { name: '數據庫', file: 'js/data/cardDatabase.js', loaded: false, required: true },
-                    { name: '基礎計算', file: 'js/calculators/baseStatsCalculator.js', loaded: false, required: true },
-                    { name: '加成計算', file: 'js/calculators/bonusCalculator.js', loaded: false, required: true },
-                    { name: '隊伍計算', file: 'js/calculators/teamCalculator.js', loaded: false, required: true },
-                    { name: '芯核系統', file: 'js/systems/coreSystem.js', loaded: false, required: true },
-                    { name: '卡片工具', file: 'js/utils/cardFilters.js', loaded: false, required: true },
-                    { name: '職業工具', file: 'js/utils/partnerProfessionUtils.js', loaded: false, required: true },
-                    { name: '主程序', file: 'js/main.js', loaded: false, required: true },
-                    { name: '戰鬥計算器', file: 'battle-calculator.js', loaded: false, required: true }
-                ];
-                this.loadedCount = 0;
-                this.totalCount = this.modules.filter(m => m.required).length;
-                this.initStatusDisplay();
-            }
-            
-            initStatusDisplay() {
-                const statusDiv = document.getElementById('moduleStatus');
-                this.modules.forEach((module, index) => {
-                    if (module.required) {
-                        const div = document.createElement('div');
-                        div.id = `module-${index}`;
-                        div.innerHTML = `<span class="module-status module-loading"></span>${module.name}`;
-                        statusDiv.appendChild(div);
-                    }
-                });
-                this.updateProgress();
-            }
-            
-            updateModuleStatus(index, status) {
-                const moduleDiv = document.getElementById(`module-${index}`);
-                if (moduleDiv) {
-                    const statusSpan = moduleDiv.querySelector('.module-status');
-                    statusSpan.className = `module-status module-${status}`;
-                }
-                
-                if (status === 'loaded') {
-                    this.modules[index].loaded = true;
-                    if (this.modules[index].required) {
-                        this.loadedCount++;
-                    }
-                }
-                
-                this.updateProgress();
-                this.checkAllLoaded();
-            }
-            
-            updateProgress() {
-                const progress = (this.loadedCount / this.totalCount) * 100;
-                document.getElementById('progressFill').style.width = progress + '%';
-                document.getElementById('currentModule').textContent = 
-                    `載入進度: ${this.loadedCount}/${this.totalCount} (${Math.round(progress)}%)`;
-            }
-            
-            checkAllLoaded() {
-                if (this.loadedCount === this.totalCount) {
-                    this.onAllLoaded();
-                }
-            }
-            
-            onAllLoaded() {
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('root').style.display = 'block';
-                    
-                    console.log('🎉 戰鬥傷害計算器載入完成！');
-                    console.log('💡 使用 calc.help() 查看可用API');
-                }, 500);
-            }
-            
-            onError(index, error) {
-                this.updateModuleStatus(index, 'error');
-                console.error(`模塊載入失敗: ${this.modules[index].name}`, error);
-                
-                setTimeout(() => {
-                    document.getElementById('loading').innerHTML = 
-                        `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
-                            <div class="text-red-300 mb-4 text-xl">❌ 模塊載入失敗</div>
-                            <div class="text-sm text-white opacity-90">
-                                <p>失敗的模塊: <strong>${this.modules[index].name}</strong></p>
-                                <p>文件路徑: <code>${this.modules[index].file}</code></p>
-                                <p class="mt-2">請檢查文件是否存在且路徑正確</p>
-                                <button onclick="location.reload()" 
-                                        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                    重新載入
-                                </button>
-                            </div>
-                        </div>`;
-                }, 1000);
-            }
+        let gameData = {
+            partners: [],
+            professions: [],
+            cards: [],
+            calc: null
+        };
+
+        let selectedCards = Array(6).fill(null);
+        let teamStats = null;
+
+        // 載入狀態更新
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
         }
-        
-        // 創建模塊載入器實例
-        const moduleLoader = new ModuleLoader();
-        
-        // 動態載入腳本的函數
-        function loadScript(src, index) {
+
+        // 載入模塊
+        async function loadModules() {
+            const modules = [
+                './js/data/cardDatabase.js',
+                './js/calculators/baseStatsCalculator.js', 
+                './js/calculators/bonusCalculator.js',
+                './js/calculators/teamCalculator.js',
+                './js/systems/coreSystem.js',
+                './js/utils/cardFilters.js',
+                './js/utils/partnerProfessionUtils.js',
+                './js/main.js'
+            ];
+
+            let loadedCount = 0;
+            
+            for (const module of modules) {
+                try {
+                    updateStatus(`載入 ${module}...`);
+                    await loadScript(module);
+                    loadedCount++;
+                    updateStatus(`已載入 ${loadedCount}/${modules.length} 個模塊`);
+                } catch (error) {
+                    console.error(`載入失敗: ${module}`, error);
+                }
+            }
+
+            // 等待 calc 初始化
+            await waitForCalc();
+            
+            // 初始化界面
+            initializeUI();
+        }
+
+        function loadScript(src) {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
-                
-                // 檢查是否是最後一個文件（戰鬥計算器）
-                if (src === 'battle-calculator.js') {
-                    script.type = 'text/babel';
-                }
-                
                 script.src = src;
-                script.onload = () => {
-                    moduleLoader.updateModuleStatus(index, 'loaded');
-                    resolve();
-                };
-                script.onerror = (error) => {
-                    moduleLoader.onError(index, error);
-                    reject(error);
-                };
+                script.onload = resolve;
+                script.onerror = reject;
                 document.head.appendChild(script);
             });
         }
-        
-        // 按順序載入模塊
-        async function loadModules() {
-            // 檢查 React 是否載入
-            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-                document.getElementById('loading').innerHTML = 
-                    '<div class="text-red-300 text-center">錯誤：無法載入 React 庫，請檢查網絡連接。</div>';
-                return;
-            }
+
+        function waitForCalc() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.calc && window.calc.getAllPartners) {
+                        gameData.calc = window.calc;
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        function initializeUI() {
+            updateStatus('初始化界面...');
             
-            try {
-                // 載入所有模塊（按依賴順序）
-                for (let i = 0; i < moduleLoader.modules.length; i++) {
-                    await loadScript(moduleLoader.modules[i].file, i);
-                }
-                
-            } catch (error) {
-                console.error('模塊載入過程中出現錯誤:', error);
+            // 載入基礎數據
+            gameData.partners = gameData.calc.getAllPartners() || [];
+            
+            // 填充搭檔選項
+            const partnerSelect = document.getElementById('partnerSelect');
+            gameData.partners.forEach(partner => {
+                const option = document.createElement('option');
+                option.value = partner.id;
+                option.textContent = partner.name;
+                partnerSelect.appendChild(option);
+            });
+
+            // 生成卡片槽位
+            generateCardSlots();
+
+            // 顯示應用
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            
+            console.log('✅ 戰鬥計算器初始化完成！');
+        }
+
+        function generateCardSlots() {
+            const cardSlots = document.getElementById('cardSlots');
+            for (let i = 0; i < 6; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'flex items-center space-x-2';
+                slot.innerHTML = `
+                    <span class="text-sm font-medium w-16">卡片${i+1}</span>
+                    <select id="card${i}" class="flex-1 p-2 border border-gray-300 rounded" onchange="selectCard(${i}, this.value)">
+                        <option value="">選擇卡片</option>
+                    </select>
+                `;
+                cardSlots.appendChild(slot);
             }
         }
-        
-        // 頁面載入完成後開始載入模塊
-        document.addEventListener('DOMContentLoaded', loadModules);
-        
-        // 全域錯誤處理
-        window.addEventListener('error', function(e) {
-            console.error('應用程式錯誤:', e.error);
-            document.getElementById('loading').innerHTML = 
-                `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
-                    <div class="text-red-300 mb-4 text-xl">❌ 應用程式執行錯誤</div>
-                    <div class="text-sm text-white opacity-90">
-                        <p>${e.error.message}</p>
-                        <p class="mt-2">請檢查瀏覽器控制台獲取詳細錯誤信息</p>
-                        <button onclick="location.reload()" 
-                                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                            重新載入
-                        </button>
-                    </div>
-                </div>`;
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('root').style.display = 'none';
-        });
-        
-        // 載入超時檢查
-        setTimeout(() => {
-            if (document.getElementById('loading').style.display !== 'none') {
-                const loadingDiv = document.getElementById('loading');
-                const currentContent = loadingDiv.innerHTML;
-                if (!currentContent.includes('錯誤') && !currentContent.includes('失敗')) {
-                    loadingDiv.innerHTML = 
-                        `<div class="text-center bg-white bg-opacity-20 backdrop-blur-lg rounded-lg p-6">
-                            <div class="text-orange-300 mb-4 text-xl">⚠️ 載入超時</div>
-                            <div class="text-sm text-white opacity-90">
-                                <p>某些模塊載入時間過長，請檢查：</p>
-                                <ul class="list-disc list-inside mt-2 text-left">
-                                    <li>網絡連接是否正常</li>
-                                    <li>所有 JS 文件是否存在</li>
-                                    <li>文件路徑是否正確</li>
-                                </ul>
-                                <button onclick="location.reload()" 
-                                        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                    重新載入
-                                </button>
-                            </div>
-                        </div>`;
+
+        function updateProfessions() {
+            const partnerId = document.getElementById('partnerSelect').value;
+            const professionSelect = document.getElementById('professionSelect');
+            
+            // 清空職業選項
+            professionSelect.innerHTML = '<option value="">請選擇職業</option>';
+            
+            if (partnerId) {
+                const professions = gameData.calc.getProfessions(partnerId) || [];
+                professions.forEach(profession => {
+                    const option = document.createElement('option');
+                    option.value = profession.id;
+                    option.textContent = profession.name;
+                    professionSelect.appendChild(option);
+                });
+            }
+
+            updateCards();
+        }
+
+        function updateCards() {
+            const partnerId = document.getElementById('partnerSelect').value;
+            
+            // 清空所有卡片選項
+            for (let i = 0; i < 6; i++) {
+                const cardSelect = document.getElementById(`card${i}`);
+                cardSelect.innerHTML = '<option value="">選擇卡片</option>';
+                selectedCards[i] = null;
+            }
+            
+            if (partnerId) {
+                const cards = gameData.calc.getCards(partnerId) || [];
+                for (let i = 0; i < 6; i++) {
+                    const cardSelect = document.getElementById(`card${i}`);
+                    cards.forEach(card => {
+                        const option = document.createElement('option');
+                        option.value = card.name;
+                        option.textContent = `${card.name} (${card.category})`;
+                        cardSelect.appendChild(option);
+                    });
                 }
             }
-        }, 15000);
-        
-        // 模塊載入完成後的調試信息
-        window.addEventListener('load', function() {
-            if (window.calc) {
-                console.log('🚀 戰鬥傷害計算器 v2.0 已就緒');
-                console.log('💡 完整戰鬥傷害計算系統');
-                console.log('🎯 職業技能倍率計算');
-                console.log('📊 即時傷害預覽');
+
+            calculateTeam();
+        }
+
+        function selectCard(index, cardName) {
+            const partnerId = document.getElementById('partnerSelect').value;
+            if (partnerId && cardName) {
+                const cards = gameData.calc.getCards(partnerId) || [];
+                selectedCards[index] = cards.find(c => c.name === cardName) || null;
+            } else {
+                selectedCards[index] = null;
             }
+            calculateTeam();
+        }
+
+        function updateBondLevel(value) {
+            document.getElementById('bondLevelValue').textContent = value;
+            calculateTeam();
+        }
+
+        function calculateTeam() {
+            const validCards = selectedCards.filter(card => card !== null);
+            if (validCards.length === 0) {
+                // 重置顯示
+                document.getElementById('hpValue').textContent = '0';
+                document.getElementById('atkValue').textContent = '0'; 
+                document.getElementById('defValue').textContent = '0';
+                document.getElementById('critValue').textContent = '0%';
+                resetDamageDisplay();
+                return;
+            }
+
+            try {
+                const bondLevel = parseInt(document.getElementById('bondLevelSlider').value);
+                const teamConfig = {
+                    cardNames: selectedCards.map(card => card?.name).filter(Boolean),
+                    levels: Array(6).fill(80),
+                    breakthroughs: Array(6).fill(1),
+                    advancements: Array(6).fill(3),
+                    partnerBondLevel: bondLevel
+                };
+
+                teamStats = gameData.calc.calculateTeam(teamConfig);
+                
+                if (teamStats) {
+                    // 更新屬性顯示
+                    document.getElementById('hpValue').textContent = teamStats.hp.toLocaleString();
+                    document.getElementById('atkValue').textContent = teamStats.atk.toLocaleString();
+                    document.getElementById('defValue').textContent = teamStats.def.toLocaleString();
+                    document.getElementById('critValue').textContent = teamStats.criticalRate.toFixed(1) + '%';
+                    
+                    // 計算技能傷害
+                    calculateDamage();
+                }
+            } catch (error) {
+                console.error('計算錯誤:', error);
+            }
+        }
+
+        function calculateDamage() {
+            if (!teamStats) return;
+
+            const professionId = document.getElementById('professionSelect').value;
+            const baseAtk = teamStats.atk;
+            const critDamage = teamStats.criticalDamage;
+            
+            // 技能倍率
+            const multipliers = getSkillMultipliers(professionId);
+            
+            // 計算各技能傷害
+            const skills = ['basic', 'skill1', 'skill2', 'ultimate'];
+            const skillKeys = ['basicAttack', 'skill1', 'skill2', 'ultimate'];
+            
+            skills.forEach((skill, index) => {
+                const multiplier = multipliers[skillKeys[index]];
+                const normal = Math.floor(baseAtk * multiplier);
+                const critical = Math.floor(normal * (1 + critDamage / 100));
+                
+                document.getElementById(`${skill}Normal`).textContent = normal.toLocaleString();
+                document.getElementById(`${skill}Crit`).textContent = critical.toLocaleString();
+            });
+        }
+
+        function getSkillMultipliers(professionId) {
+            const multipliers = {
+                'eternal_prophet': { basicAttack: 0.8, skill1: 2.2, skill2: 3.8, ultimate: 5.5 },
+                'jiuli_commander': { basicAttack: 1.0, skill1: 2.5, skill2: 4.2, ultimate: 6.0 },
+                'endless_raider': { basicAttack: 0.9, skill1: 2.3, skill2: 4.0, ultimate: 5.8 },
+                'abyss_master': { basicAttack: 0.7, skill1: 2.0, skill2: 3.5, ultimate: 5.2 },
+                'light_chaser': { basicAttack: 1.1, skill1: 2.4, skill2: 4.1, ultimate: 6.2 },
+                'light_hunter': { basicAttack: 0.8, skill1: 2.1, skill2: 3.7, ultimate: 5.4 },
+                'fleet_officer': { basicAttack: 0.9, skill1: 2.2, skill2: 3.9, ultimate: 5.6 },
+                'weapon_x02': { basicAttack: 1.0, skill1: 2.6, skill2: 4.3, ultimate: 6.1 },
+                'deep_sea_diver': { basicAttack: 0.95, skill1: 2.4, skill2: 4.0, ultimate: 5.9 },
+                'tidal_god': { basicAttack: 0.85, skill1: 2.1, skill2: 3.6, ultimate: 5.3 }
+            };
+            return multipliers[professionId] || { basicAttack: 1.0, skill1: 2.5, skill2: 4.0, ultimate: 6.0 };
+        }
+
+        function resetDamageDisplay() {
+            ['basic', 'skill1', 'skill2', 'ultimate'].forEach(skill => {
+                document.getElementById(`${skill}Normal`).textContent = '0';
+                document.getElementById(`${skill}Crit`).textContent = '0';
+            });
+        }
+
+        // 啟動應用
+        document.addEventListener('DOMContentLoaded', () => {
+            loadModules().catch(error => {
+                console.error('載入失敗:', error);
+                updateStatus('載入失敗，請檢查控制台');
+            });
         });
+
+        // 超時處理
+        setTimeout(() => {
+            if (document.getElementById('loading').style.display !== 'none') {
+                updateStatus('載入超時，請重新載入頁面');
+            }
+        }, 10000);
     </script>
 </body>
 </html>
