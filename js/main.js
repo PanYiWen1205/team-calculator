@@ -1,4 +1,4 @@
-// main.js - 戰鬥隊伍組建計算機主程序
+// main.js - 戰鬥隊伍組建計算機主程序 (修正版)
 class TeamCalculatorApp {
     constructor() {
         this.initialized = false;
@@ -47,6 +47,27 @@ class TeamCalculatorApp {
         }
     }
 
+    // ✅ 修正：使用正確的函數名稱
+    calculateSingleCard(cardName, config = {}) {
+        this.checkInitialized();
+        
+        const card = this.dependencies.cardDatabase.getCardByName(cardName);
+        if (!card) {
+            throw new Error(`找不到卡片: ${cardName}`);
+        }
+        
+        const defaultConfig = {
+            level: 80,
+            breakthrough: 1,
+            advancement: 3,
+            userConstellationMatch: 0,
+            userPerfectAlignment: false
+        };
+        
+        const finalConfig = { ...defaultConfig, ...config, card };
+        return this.dependencies.teamCalculator.calculateSingleCardStats(finalConfig);
+    }
+
     // 計算帶芯核的單張卡片屬性
     calculateSingleCardWithCore(cardName, config = {}) {
         this.checkInitialized();
@@ -91,6 +112,15 @@ class TeamCalculatorApp {
         }
         
         return baseStats;
+    }
+
+    // 計算隊伍屬性
+    calculateTeam(teamConfig) {
+        this.checkInitialized();
+        
+        // 驗證和處理輸入
+        const processedConfig = this.processTeamConfig(teamConfig);
+        return this.dependencies.teamCalculator.calculateTeamStats(processedConfig);
     }
 
     // 計算帶芯核的隊伍屬性
@@ -138,15 +168,6 @@ class TeamCalculatorApp {
         }
         
         return baseTeamStats;
-    }
-
-    // 計算隊伍屬性
-    calculateTeam(teamConfig) {
-        this.checkInitialized();
-        
-        // 驗證和處理輸入
-        const processedConfig = this.processTeamConfig(teamConfig);
-        return this.dependencies.teamCalculator.calculateTeamStats(processedConfig);
     }
 
     // 處理隊伍配置
@@ -236,18 +257,6 @@ class TeamCalculatorApp {
         return this.dependencies.teamCalculator.batchCalculateByPartner(partnerId, level, advancement);
     }
 
-    // 獲取所有搭檔資訊
-    getAllPartners() {
-        this.checkInitialized();
-        return this.dependencies.cardDatabase.getAllPartners();
-    }
-
-    // 獲取所有卡片
-    getAllCards() {
-        this.checkInitialized();
-        return this.dependencies.cardDatabase.getAllCards();
-    }
-
     // 獲取職業相關信息
     getProfessions(partnerId = null) {
         this.checkInitialized();
@@ -312,6 +321,35 @@ class TeamCalculatorApp {
     generateCoreTemplate(coreType) {
         this.checkInitialized();
         return this.dependencies.coreSystem.generateCoreTemplate(coreType);
+    }
+
+    // 獲取所有搭檔
+    getAllPartners() {
+        this.checkInitialized();
+        return this.dependencies.cardDatabase.getAllPartners();
+    }
+
+    // 獲取所有卡片
+    getAllCards() {
+        this.checkInitialized();
+        return this.dependencies.cardDatabase.getAllCards();
+    }
+
+    // 獲取統計資訊
+    getStatistics() {
+        this.checkInitialized();
+        const cardStats = this.dependencies.cardFilters.getFilterStatistics();
+        const professionStats = this.dependencies.partnerProfessionUtils.getProfessionStatistics();
+        
+        return {
+            cards: cardStats,
+            professions: professionStats,
+            summary: {
+                totalCards: cardStats.total,
+                totalProfessions: professionStats.total,
+                totalPartners: Object.keys(cardStats.byPartner).length
+            }
+        };
     }
 
     // 驗證計算準確性
