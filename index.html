@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥隊伍組建計算機 - 模塊化版本</title>
+    <title>戰鬥隊伍組建計算機 - 模塊化版本 v2.0</title>
     
     <!-- React 和相關程式庫 -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -45,7 +45,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             font-size: 1.2rem;
             color: #64748b;
         }
@@ -116,18 +116,81 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        
+        /* 進度條 */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
     <!-- 載入提示 -->
     <div id="loading" class="loading">
-        <div class="text-center">
+        <div class="text-center max-w-md mx-auto p-6">
             <div class="flex items-center justify-center mb-4">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-                <span>載入戰鬥隊伍組建計算機...</span>
+                <span class="text-lg font-medium">載入戰鬥隊伍組建計算機 v2.0...</span>
             </div>
+            
+            <!-- 進度條 -->
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            
             <div id="loadingStatus" class="text-sm text-gray-600">
-                <div id="moduleStatus" class="space-y-1"></div>
+                <div id="currentModule" class="mb-2 font-medium">初始化中...</div>
+                <div id="moduleStatus" class="space-y-1 text-left"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 簡單的功能測試界面 -->
+    <div id="testInterface" style="display: none;" class="min-h-screen bg-gray-50 py-8">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+                    🏆 戰鬥隊伍組建計算機 v2.0
+                </h1>
+                <p class="text-center text-gray-600 mb-8">
+                    模塊化架構 | 芯核系統 | 職業系統
+                </p>
+                
+                <!-- 功能測試按鈕 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <button onclick="testBasicCalculation()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        基礎計算測試
+                    </button>
+                    <button onclick="testProfessionSystem()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        職業系統測試
+                    </button>
+                    <button onclick="testCoreSystem()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        芯核系統測試
+                    </button>
+                    <button onclick="showHelp()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        顯示API
+                    </button>
+                </div>
+                
+                <!-- 結果顯示區域 -->
+                <div id="testResults" class="bg-gray-50 rounded-lg p-4 min-h-32">
+                    <p class="text-gray-500 text-center">點擊上方按鈕測試功能</p>
+                </div>
+                
+                <!-- 狀態信息 -->
+                <div class="mt-6 text-sm text-gray-500 text-center">
+                    <p>模塊載入完成 | 版本: v2.0-modular | 使用 <code>calc.help()</code> 查看完整API</p>
+                </div>
             </div>
         </div>
     </div>
@@ -141,42 +204,57 @@
         class ModuleLoader {
             constructor() {
                 this.modules = [
-                    { name: '數據庫', file: 'js/data/cardDatabase.js', loaded: false },
-                    { name: '基礎計算', file: 'js/calculators/baseStatsCalculator.js', loaded: false },
-                    { name: '加成計算', file: 'js/calculators/bonusCalculator.js', loaded: false },
-                    { name: '隊伍計算', file: 'js/calculators/teamCalculator.js', loaded: false },
-                    { name: '芯核系統', file: 'js/systems/coreSystem.js', loaded: false },
-                    { name: '卡片工具', file: 'js/utils/cardFilters.js', loaded: false },
-                    { name: '職業工具', file: 'js/utils/partnerProfessionUtils.js', loaded: false },
-                    { name: '主程序', file: 'js/main.js', loaded: false },
-                    { name: 'React應用', file: 'app.js', loaded: false }
+                    { name: '數據庫', file: 'js/data/cardDatabase.js', loaded: false, required: true },
+                    { name: '基礎計算', file: 'js/calculators/baseStatsCalculator.js', loaded: false, required: true },
+                    { name: '加成計算', file: 'js/calculators/bonusCalculator.js', loaded: false, required: true },
+                    { name: '隊伍計算', file: 'js/calculators/teamCalculator.js', loaded: false, required: true },
+                    { name: '芯核系統', file: 'js/systems/coreSystem.js', loaded: false, required: true },
+                    { name: '卡片工具', file: 'js/utils/cardFilters.js', loaded: false, required: true },
+                    { name: '職業工具', file: 'js/utils/partnerProfessionUtils.js', loaded: false, required: true },
+                    { name: '主程序', file: 'js/main.js', loaded: false, required: true },
+                    { name: 'React應用', file: 'app.js', loaded: false, required: false }
                 ];
                 this.loadedCount = 0;
-                this.totalCount = this.modules.length;
+                this.totalCount = this.modules.filter(m => m.required).length;
                 this.initStatusDisplay();
             }
             
             initStatusDisplay() {
                 const statusDiv = document.getElementById('moduleStatus');
                 this.modules.forEach((module, index) => {
-                    const div = document.createElement('div');
-                    div.id = `module-${index}`;
-                    div.innerHTML = `<span class="module-status module-loading"></span>${module.name}`;
-                    statusDiv.appendChild(div);
+                    if (module.required) {
+                        const div = document.createElement('div');
+                        div.id = `module-${index}`;
+                        div.innerHTML = `<span class="module-status module-loading"></span>${module.name}`;
+                        statusDiv.appendChild(div);
+                    }
                 });
+                this.updateProgress();
             }
             
             updateModuleStatus(index, status) {
                 const moduleDiv = document.getElementById(`module-${index}`);
-                const statusSpan = moduleDiv.querySelector('.module-status');
-                statusSpan.className = `module-status module-${status}`;
+                if (moduleDiv) {
+                    const statusSpan = moduleDiv.querySelector('.module-status');
+                    statusSpan.className = `module-status module-${status}`;
+                }
                 
                 if (status === 'loaded') {
                     this.modules[index].loaded = true;
-                    this.loadedCount++;
+                    if (this.modules[index].required) {
+                        this.loadedCount++;
+                    }
                 }
                 
+                this.updateProgress();
                 this.checkAllLoaded();
+            }
+            
+            updateProgress() {
+                const progress = (this.loadedCount / this.totalCount) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('currentModule').textContent = 
+                    `載入進度: ${this.loadedCount}/${this.totalCount} (${Math.round(progress)}%)`;
             }
             
             checkAllLoaded() {
@@ -188,8 +266,17 @@
             onAllLoaded() {
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
-                    document.getElementById('root').style.display = 'block';
-                    console.log('🎉 所有模塊載入完成！');
+                    
+                    // 檢查是否有 React 應用
+                    if (this.modules[8].loaded) {
+                        document.getElementById('root').style.display = 'block';
+                    } else {
+                        document.getElementById('testInterface').style.display = 'block';
+                    }
+                    
+                    console.log('🎉 所有核心模塊載入完成！');
+                    console.log('💡 使用 calc.help() 查看可用API');
+                    console.log('📊 使用 calc.stats() 查看統計信息');
                 }, 500);
             }
             
@@ -197,18 +284,24 @@
                 this.updateModuleStatus(index, 'error');
                 console.error(`模塊載入失敗: ${this.modules[index].name}`, error);
                 
-                // 顯示錯誤信息
-                setTimeout(() => {
-                    document.getElementById('loading').innerHTML = 
-                        `<div class="text-center">
-                            <div class="text-red-600 mb-4">❌ 模塊載入失敗</div>
-                            <div class="text-sm text-gray-600">
-                                <p>失敗的模塊: <strong>${this.modules[index].name}</strong></p>
-                                <p>文件路徑: <code>${this.modules[index].file}</code></p>
-                                <p class="mt-2">請檢查文件是否存在且路徑正確</p>
-                            </div>
-                        </div>`;
-                }, 1000);
+                // 如果是必需模塊失敗，顯示錯誤
+                if (this.modules[index].required) {
+                    setTimeout(() => {
+                        document.getElementById('loading').innerHTML = 
+                            `<div class="text-center">
+                                <div class="text-red-600 mb-4">❌ 關鍵模塊載入失敗</div>
+                                <div class="text-sm text-gray-600">
+                                    <p>失敗的模塊: <strong>${this.modules[index].name}</strong></p>
+                                    <p>文件路徑: <code>${this.modules[index].file}</code></p>
+                                    <p class="mt-2">請檢查文件是否存在且路徑正確</p>
+                                    <button onclick="location.reload()" 
+                                            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                        重新載入
+                                    </button>
+                                </div>
+                            </div>`;
+                    }, 1000);
+                }
             }
         }
         
@@ -226,7 +319,12 @@
                 };
                 script.onerror = (error) => {
                     moduleLoader.onError(index, error);
-                    reject(error);
+                    // 非必需模塊失敗時不reject
+                    if (!moduleLoader.modules[index].required) {
+                        resolve();
+                    } else {
+                        reject(error);
+                    }
                 };
                 document.head.appendChild(script);
             });
@@ -247,7 +345,7 @@
                     await loadScript(moduleLoader.modules[i].file, i);
                 }
                 
-                // 最後載入 React 應用
+                // 最後載入 React 應用（可選）
                 const lastIndex = moduleLoader.modules.length - 1;
                 const script = document.createElement('script');
                 script.type = 'text/babel';
@@ -262,6 +360,86 @@
                 
             } catch (error) {
                 console.error('模塊載入過程中出現錯誤:', error);
+            }
+        }
+        
+        // 測試函數
+        function testBasicCalculation() {
+            const results = document.getElementById('testResults');
+            try {
+                const result = calc.calculateCard('擁雪見緣', { level: 80, advancement: 3 });
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2">✅ 基礎計算測試成功</h3>
+                    <pre class="bg-white p-3 rounded border text-sm overflow-auto">${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-600">❌ 基礎計算測試失敗</h3>
+                    <p class="text-red-600">${error.message}</p>
+                `;
+            }
+        }
+        
+        function testProfessionSystem() {
+            const results = document.getElementById('testResults');
+            try {
+                const professions = calc.getProfessions('lishen');
+                const bondBonus = calc.calculateBond(25);
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2">✅ 職業系統測試成功</h3>
+                    <div class="bg-white p-3 rounded border text-sm">
+                        <p><strong>黎深的職業:</strong> ${professions.map(p => p.name).join(', ')}</p>
+                        <p><strong>25級牽絆加成:</strong> HP+${bondBonus.hp}, ATK+${bondBonus.atk}, DEF+${bondBonus.def}</p>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-600">❌ 職業系統測試失敗</h3>
+                    <p class="text-red-600">${error.message}</p>
+                `;
+            }
+        }
+        
+        function testCoreSystem() {
+            const results = document.getElementById('testResults');
+            try {
+                const coreTypes = calc.getCores('日卡');
+                const alphaTemplate = calc.coreTemplate('alpha');
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2">✅ 芯核系統測試成功</h3>
+                    <div class="bg-white p-3 rounded border text-sm">
+                        <p><strong>日卡可用芯核:</strong> ${Object.keys(coreTypes).join(', ')}</p>
+                        <p><strong>α芯核模板:</strong></p>
+                        <pre class="mt-2 text-xs">${JSON.stringify(alphaTemplate, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-600">❌ 芯核系統測試失敗</h3>
+                    <p class="text-red-600">${error.message}</p>
+                `;
+            }
+        }
+        
+        function showHelp() {
+            const results = document.getElementById('testResults');
+            try {
+                const methods = calc.help();
+                let html = '<h3 class="font-bold text-lg mb-2">📚 可用 API 方法</h3><div class="bg-white p-3 rounded border text-sm">';
+                Object.entries(methods).forEach(([category, methodList]) => {
+                    html += `<h4 class="font-semibold mt-3 mb-1">${category}:</h4><ul class="list-disc list-inside ml-2">`;
+                    methodList.forEach(method => {
+                        html += `<li><code class="text-xs bg-gray-100 px-1 rounded">${method}</code></li>`;
+                    });
+                    html += '</ul>';
+                });
+                html += '</div>';
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-600">❌ 幫助信息載入失敗</h3>
+                    <p class="text-red-600">${error.message}</p>
+                `;
             }
         }
         
@@ -285,6 +463,7 @@
                 </div>`;
             document.getElementById('loading').style.display = 'block';
             document.getElementById('root').style.display = 'none';
+            document.getElementById('testInterface').style.display = 'none';
         });
         
         // 載入超時檢查
@@ -311,25 +490,26 @@
                         </div>`;
                 }
             }
-        }, 10000);
-    </script>
-    
-    <!-- 開發模式下的調試信息 -->
-    <script>
-        // 添加全域變數以便調試
-        window.debugInfo = {
-            modules: [],
-            loadTime: Date.now(),
-            version: '2.0.0-modular'
-        };
+        }, 15000);
         
-        // 模塊載入完成後的回調
+        // 模塊載入完成後的調試信息
         window.addEventListener('load', function() {
             if (window.calc) {
                 console.log('🚀 戰鬥隊伍組建計算機 v2.0 已就緒');
                 console.log('💡 使用 calc.help() 查看可用API');
                 console.log('📊 使用 calc.stats() 查看統計信息');
-                console.log('🔧 調試信息：', window.debugInfo);
+                console.log('🔧 調試信息可在控制台查看');
+                
+                // 添加全域調試變數
+                window.debugInfo = {
+                    version: '2.0.0-modular',
+                    loadTime: Date.now(),
+                    modules: moduleLoader.modules.map(m => ({
+                        name: m.name,
+                        loaded: m.loaded,
+                        required: m.required
+                    }))
+                };
             }
         });
     </script>
