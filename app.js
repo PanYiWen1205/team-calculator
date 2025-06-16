@@ -1,45 +1,104 @@
-// 戰鬥隊伍組建計算機 - 完整修正版本
+// 戰鬥隊伍組建計算機 - 修正突破系統版本
 function TeamCalculator() {
-  // 卡牌基礎數值表
+  // 卡牌基礎數值表 - 包含突破系統
   const cardBaseStats = {
     5: {
       attack: {
         0: { 
           1: { hp: 2400, atk: 132, def: 60 },
+          10: { hp: 3480, atk: 191, def: 87 },
+          20: { hp: 5160, atk: 283, def: 129 },
+          30: { hp: 6840, atk: 376, def: 171 },
+          40: { hp: 8520, atk: 468, def: 213 },
+          50: { hp: 10200, atk: 561, def: 255 },
           60: { hp: 11880, atk: 653, def: 297 },
+          "60+": { hp: 13843, atk: 761, def: 346 },
           70: { hp: 14040, atk: 772, def: 351 },
-          80: { hp: 15240, atk: 838, def: 381 }
+          "70+": { hp: 15724, atk: 864, def: 393 },
+          80: { hp: 15240, atk: 838, def: 381 },
+          "80+": { hp: 16440, atk: 904, def: 411 }
         },
         1: { 
           1: { hp: 2608, atk: 147, def: 67 },
           60: { hp: 13305, atk: 731, def: 332 },
           70: { hp: 15724, atk: 864, def: 393 },
-          80: { hp: 17068, atk: 938, def: 426 }
+          80: { hp: 17068, atk: 938, def: 426 },
+          "80+": { hp: 18412, atk: 1012, def: 460 }
         },
         2: { 
           1: { hp: 2816, atk: 163, def: 74 },
           60: { hp: 14731, atk: 810, def: 368 },
           70: { hp: 17409, atk: 957, def: 435 },
-          80: { hp: 18897, atk: 1039, def: 472 }
+          80: { hp: 18897, atk: 1039, def: 472 },
+          "80+": { hp: 20385, atk: 1121, def: 509 }
         },
         3: { 
           1: { hp: 3264, atk: 179, def: 81 },
           60: { hp: 16156, atk: 888, def: 403 },
           70: { hp: 18441, atk: 1014, def: 461 },
-          80: { hp: 20726, atk: 1139, def: 518 }
+          80: { hp: 20726, atk: 1139, def: 518 },
+          "80+": { hp: 22358, atk: 1229, def: 558 }
         }
       },
       defense: {
-        0: { 1: { hp: 2400, atk: 120, def: 66 }, 80: { hp: 15240, atk: 762, def: 419 } },
-        1: { 1: { hp: 2608, atk: 134, def: 73 }, 80: { hp: 17068, atk: 853, def: 468 } },
-        2: { 1: { hp: 2816, atk: 148, def: 81 }, 80: { hp: 18897, atk: 944, def: 519 } },
-        3: { 1: { hp: 3264, atk: 163, def: 89 }, 80: { hp: 20726, atk: 1036, def: 569 } }
+        0: { 
+          1: { hp: 2400, atk: 120, def: 66 },
+          60: { hp: 11880, atk: 594, def: 326 },
+          70: { hp: 13560, atk: 678, def: 372 },
+          80: { hp: 15240, atk: 762, def: 419 },
+          "80+": { hp: 16440, atk: 822, def: 452 }
+        },
+        1: { 
+          1: { hp: 2608, atk: 134, def: 73 },
+          60: { hp: 13305, atk: 665, def: 365 },
+          70: { hp: 15724, atk: 786, def: 432 },
+          80: { hp: 17068, atk: 853, def: 468 },
+          "80+": { hp: 18412, atk: 920, def: 506 }
+        },
+        2: { 
+          1: { hp: 2816, atk: 148, def: 81 },
+          60: { hp: 14731, atk: 736, def: 405 },
+          70: { hp: 17409, atk: 870, def: 478 },
+          80: { hp: 18897, atk: 944, def: 519 },
+          "80+": { hp: 20385, atk: 1019, def: 560 }
+        },
+        3: { 
+          1: { hp: 3264, atk: 163, def: 89 },
+          60: { hp: 16156, atk: 807, def: 444 },
+          70: { hp: 18441, atk: 922, def: 507 },
+          80: { hp: 20726, atk: 1036, def: 569 },
+          "80+": { hp: 22358, atk: 1117, def: 614 }
+        }
       },
       life: {
-        0: { 1: { hp: 2640, atk: 120, def: 60 }, 80: { hp: 16764, atk: 762, def: 381 } },
-        1: { 1: { hp: 2866, atk: 134, def: 67 }, 80: { hp: 18775, atk: 853, def: 426 } },
-        2: { 1: { hp: 3092, atk: 148, def: 74 }, 80: { hp: 20787, atk: 944, def: 472 } },
-        3: { 1: { hp: 3590, atk: 163, def: 81 }, 80: { hp: 22799, atk: 1036, def: 518 } }
+        0: { 
+          1: { hp: 2640, atk: 120, def: 60 },
+          60: { hp: 13068, atk: 594, def: 297 },
+          70: { hp: 14916, atk: 678, def: 339 },
+          80: { hp: 16764, atk: 762, def: 381 },
+          "80+": { hp: 18084, atk: 822, def: 411 }
+        },
+        1: { 
+          1: { hp: 2866, atk: 134, def: 67 },
+          60: { hp: 14636, atk: 665, def: 332 },
+          70: { hp: 17297, atk: 786, def: 393 },
+          80: { hp: 18775, atk: 853, def: 426 },
+          "80+": { hp: 20254, atk: 920, def: 460 }
+        },
+        2: { 
+          1: { hp: 3092, atk: 148, def: 74 },
+          60: { hp: 16204, atk: 736, def: 368 },
+          70: { hp: 19150, atk: 870, def: 435 },
+          80: { hp: 20787, atk: 944, def: 472 },
+          "80+": { hp: 22424, atk: 1019, def: 509 }
+        },
+        3: { 
+          1: { hp: 3590, atk: 163, def: 81 },
+          60: { hp: 17772, atk: 807, def: 403 },
+          70: { hp: 21003, atk: 954, def: 477 },
+          80: { hp: 22799, atk: 1036, def: 518 },
+          "80+": { hp: 24594, atk: 1117, def: 558 }
+        }
       }
     }
   };
@@ -48,16 +107,16 @@ function TeamCalculator() {
   const cardAttributeBonus = {
     5: {
       日卡: {
-        0: { 1: 5.2, 60: 8.2, 70: 8.8, 80: 9.4 },
-        1: { 1: 8.2, 60: 11.2, 70: 11.8, 80: 12.4 },
-        2: { 1: 11.2, 60: 14.2, 70: 14.8, 80: 15.4 },
-        3: { 1: 14.2, 60: 17.2, 70: 17.8, 80: 18.4 }
+        0: { 1: 5.2, 60: 8.2, 70: 8.8, 80: 9.4, "80+": 11.0 },
+        1: { 1: 8.2, 60: 11.2, 70: 11.8, 80: 12.4, "80+": 14.0 },
+        2: { 1: 11.2, 60: 14.2, 70: 14.8, 80: 15.4, "80+": 17.0 },
+        3: { 1: 14.2, 60: 17.2, 70: 17.8, 80: 18.4, "80+": 20.0 }
       },
       月卡: {
-        0: { 1: 2.6, 60: 4.1, 70: 4.4, 80: 4.7 },
-        1: { 1: 4.1, 60: 5.6, 70: 5.9, 80: 6.2 },
-        2: { 1: 5.6, 60: 7.1, 70: 7.4, 80: 7.7 },
-        3: { 1: 7.1, 60: 8.6, 70: 8.9, 80: 9.2 }
+        0: { 1: 2.6, 60: 4.1, 70: 4.4, 80: 4.7, "80+": 5.5 },
+        1: { 1: 4.1, 60: 5.6, 70: 5.9, 80: 6.2, "80+": 7.0 },
+        2: { 1: 5.6, 60: 7.1, 70: 7.4, 80: 7.7, "80+": 8.5 },
+        3: { 1: 7.1, 60: 8.6, 70: 8.9, 80: 9.2, "80+": 10.0 }
       }
     }
   };
@@ -153,6 +212,76 @@ function TeamCalculator() {
   const [cardBreakthroughs, setCardBreakthroughs] = React.useState({});
   const [cardAdvancements, setCardAdvancements] = React.useState({});
 
+  // 修正後的基礎數值查詢函數
+  const getBaseStatsForLevel = (rarity, type, advancement, level, isBreakthrough = false) => {
+    const typeTable = cardBaseStats[rarity]?.[type]?.[advancement];
+    if (!typeTable) return { hp: 15000, atk: 800, def: 400 };
+    
+    // 處理突破系統的特殊鍵值
+    let levelKey = level;
+    
+    // 如果啟用突破且為特定等級，使用突破後數值
+    if (isBreakthrough && (level === 60 || level === 70 || level === 80)) {
+      levelKey = `${level}+`;
+    }
+    
+    // 直接查找對應等級
+    if (typeTable[levelKey]) {
+      return typeTable[levelKey];
+    }
+    
+    // 如果沒有突破數值，使用基礎數值
+    if (typeTable[level]) {
+      return typeTable[level];
+    }
+    
+    // 線性插值或使用最接近的數值
+    const availableLevels = Object.keys(typeTable)
+      .filter(key => !key.includes('+'))
+      .map(Number)
+      .filter(lvl => !isNaN(lvl) && lvl <= level)
+      .sort((a, b) => b - a);
+    
+    if (availableLevels.length > 0) {
+      return typeTable[availableLevels[0]];
+    }
+    
+    return typeTable[80] || { hp: 15000, atk: 800, def: 400 };
+  };
+
+  // 修正後的屬性加成查詢函數
+  const getAttributeBonus = (rarity, category, advancement, level, isBreakthrough = false) => {
+    const bonusTable = cardAttributeBonus[rarity]?.[category]?.[advancement];
+    if (!bonusTable) return 0;
+    
+    // 處理突破系統的特殊鍵值
+    let levelKey = level;
+    if (isBreakthrough && (level === 60 || level === 70 || level === 80)) {
+      levelKey = `${level}+`;
+    }
+    
+    if (bonusTable[levelKey]) {
+      return bonusTable[levelKey];
+    }
+    
+    if (bonusTable[level]) {
+      return bonusTable[level];
+    }
+    
+    // 找最接近的等級
+    const availableLevels = Object.keys(bonusTable)
+      .filter(key => !key.includes('+'))
+      .map(Number)
+      .filter(lvl => !isNaN(lvl) && lvl <= level)
+      .sort((a, b) => b - a);
+    
+    if (availableLevels.length > 0) {
+      return bonusTable[availableLevels[0]];
+    }
+    
+    return bonusTable[80] || 0;
+  };
+
   // 工具函數
   const calculatePartnerBondBonus = (bondLevel) => {
     if (bondLevel < 5) return { hp: 0, atk: 0, def: 0 };
@@ -181,26 +310,6 @@ function TeamCalculator() {
     }));
   };
 
-  const getBaseStatsForLevel = (rarity, type, advancement, level) => {
-    const typeTable = cardBaseStats[rarity]?.[type]?.[advancement];
-    if (!typeTable) return { hp: 15000, atk: 800, def: 400 };
-    
-    if (typeTable[level]) {
-      return typeTable[level];
-    }
-    
-    const availableLevels = Object.keys(typeTable)
-      .map(Number)
-      .filter(lvl => !isNaN(lvl) && lvl <= level)
-      .sort((a, b) => b - a);
-    
-    if (availableLevels.length > 0) {
-      return typeTable[availableLevels[0]];
-    }
-    
-    return typeTable[80] || { hp: 15000, atk: 800, def: 400 };
-  };
-
   const calculateWeaknessDamage = (card, hp, atk, def) => {
     if (!card) return 0;
     
@@ -227,35 +336,28 @@ function TeamCalculator() {
     return weaknessDamage;
   };
 
+  // 修正後的計算函數
   const calculateStats = (card, level, breakthrough, advancement = 0) => {
     if (!card) return { hp: 0, atk: 0, def: 0, criticalDamage: 0, criticalRate: 0, weaknessDamage: 0 };
     
-    const baseStats = getBaseStatsForLevel(card.rarity, card.type, advancement, level);
+    // 判斷是否進行了突破
+    // breakthrough 參數現在表示是否啟用突破（0=未突破，1=已突破）
+    const isBreakthrough = breakthrough > 0 && (level >= 60);
+    
+    // 直接從數值表查詢對應的數值
+    const baseStats = getBaseStatsForLevel(card.rarity, card.type, advancement, level, isBreakthrough);
     let hp = baseStats.hp;
     let atk = baseStats.atk;
     let def = baseStats.def;
     
-    // 突破加成
-    if (breakthrough > 0) {
-      const breakBonus = breakthrough * 0.05;
-      hp = Math.floor(hp * (1 + breakBonus));
-      atk = Math.floor(atk * (1 + breakBonus));
-      def = Math.floor(def * (1 + breakBonus));
-    }
-    
-    // 屬性加成
+    // 查詢屬性加成
     let criticalDamage = 0;
     let criticalRate = 0;
     
-    if (cardAttributeBonus[card.rarity]) {
-      const categoryKey = card.category;
-      if (categoryKey === '日卡') {
-        criticalDamage = cardAttributeBonus[card.rarity][categoryKey][advancement]?.[level] || 
-                        cardAttributeBonus[card.rarity][categoryKey][advancement]?.[80] || 0;
-      } else if (categoryKey === '月卡') {
-        criticalRate = cardAttributeBonus[card.rarity][categoryKey][advancement]?.[level] || 
-                      cardAttributeBonus[card.rarity][categoryKey][advancement]?.[80] || 0;
-      }
+    if (card.category === '日卡') {
+      criticalDamage = getAttributeBonus(card.rarity, card.category, advancement, level, isBreakthrough);
+    } else if (card.category === '月卡') {
+      criticalRate = getAttributeBonus(card.rarity, card.category, advancement, level, isBreakthrough);
     }
     
     // 星譜加成
@@ -299,8 +401,8 @@ function TeamCalculator() {
     if (targetSlot) {
       setTeamSlots(prev => ({ ...prev, [targetSlot]: card }));
       setCardLevels(prev => ({ ...prev, [targetSlot]: 80 }));
-      setCardBreakthroughs(prev => ({ ...prev, [targetSlot]: 0 }));
-      setCardAdvancements(prev => ({ ...prev, [targetSlot]: 0 }));
+      setCardBreakthroughs(prev => ({ ...prev, [targetSlot]: 1 })); // 預設已突破
+      setCardAdvancements(prev => ({ ...prev, [targetSlot]: 3 })); // 預設3進階
     }
   };
 
@@ -344,16 +446,16 @@ function TeamCalculator() {
       const slotId = `sun${index + 1}`;
       newTeamSlots[slotId] = card;
       newLevels[slotId] = 80;
-      newBreakthroughs[slotId] = 0;
-      newAdvancements[slotId] = 0;
+      newBreakthroughs[slotId] = 1;
+      newAdvancements[slotId] = 3;
     });
     
     moonCards.forEach((card, index) => {
       const slotId = `moon${index + 1}`;
       newTeamSlots[slotId] = card;
       newLevels[slotId] = 80;
-      newBreakthroughs[slotId] = 0;
-      newAdvancements[slotId] = 0;
+      newBreakthroughs[slotId] = 1;
+      newAdvancements[slotId] = 3;
     });
     
     setTeamSlots(prev => ({ ...prev, ...newTeamSlots }));
@@ -597,23 +699,23 @@ function TeamCalculator() {
                           React.createElement('div', {},
                             React.createElement('label', {className: "text-xs font-medium"}, "突破"),
                             React.createElement('select', {
-                              value: cardBreakthroughs[slotId] || 0,
+                              value: cardBreakthroughs[slotId] || 1,
                               onChange: (e) => {
                                 const breakthrough = parseInt(e.target.value);
                                 setCardBreakthroughs(prev => ({ ...prev, [slotId]: breakthrough }));
                               },
-                              className: "w-full text-xs p-1 border rounded"
+                              className: "w-full text-xs p-1 border rounded",
+                              disabled: (cardLevels[slotId] || 80) < 60
                             },
                               React.createElement('option', {value: 0}, "未突破"),
-                              React.createElement('option', {value: 1}, "1突破"),
-                              React.createElement('option', {value: 2}, "2突破"),
-                              React.createElement('option', {value: 3}, "3突破")
-                            )
+                              React.createElement('option', {value: 1}, "已突破/覺醒")
+                            ),
+                            (cardLevels[slotId] || 80) < 60 && React.createElement('div', {className: "text-xs text-gray-500 text-center"}, "60級以上可突破")
                           ),
                           React.createElement('div', {},
                             React.createElement('label', {className: "text-xs font-medium"}, "進階"),
                             React.createElement('select', {
-                              value: cardAdvancements[slotId] || 0,
+                              value: cardAdvancements[slotId] || 3,
                               onChange: (e) => {
                                 const advancement = parseInt(e.target.value);
                                 setCardAdvancements(prev => ({ ...prev, [slotId]: advancement }));
@@ -634,8 +736,8 @@ function TeamCalculator() {
                             const stats = calculateStats(
                               teamSlots[slotId], 
                               cardLevels[slotId] || 80,
-                              cardBreakthroughs[slotId] || 0,
-                              cardAdvancements[slotId] || 0
+                              cardBreakthroughs[slotId] || 1,
+                              cardAdvancements[slotId] || 3
                             );
                             return React.createElement('div', {className: "space-y-1"},
                               React.createElement('div', {}, `生命: ${stats.hp.toLocaleString()}`),
@@ -687,7 +789,20 @@ function TeamCalculator() {
                             },
                             className: "w-full"
                           }),
-                          React.createElement('div', {className: "text-xs text-center"}, `Lv.${cardLevels[slotId] || 80}`)
+                          React.createElement('div', {className: "text-xs text-center"}, `Lv.${cardLevels[slotId] || 80}`),
+                          React.createElement('select', {
+                            value: cardAdvancements[slotId] || 3,
+                            onChange: (e) => {
+                              const advancement = parseInt(e.target.value);
+                              setCardAdvancements(prev => ({ ...prev, [slotId]: advancement }));
+                            },
+                            className: "w-full text-xs p-1 border rounded"
+                          },
+                            React.createElement('option', {value: 0}, "未進階"),
+                            React.createElement('option', {value: 1}, "1進階"),
+                            React.createElement('option', {value: 2}, "2進階"),
+                            React.createElement('option', {value: 3}, "3進階")
+                          )
                         )
                       ) :
                       React.createElement('div', {className: "w-24 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs bg-gray-50 mx-auto"}, "空位")
@@ -715,8 +830,8 @@ function TeamCalculator() {
                     const stats = calculateStats(
                       card,
                       cardLevels[slotId] || 80,
-                      cardBreakthroughs[slotId] || 0,
-                      cardAdvancements[slotId] || 0
+                      cardBreakthroughs[slotId] || 1,
+                      cardAdvancements[slotId] || 3
                     );
                     
                     return {
