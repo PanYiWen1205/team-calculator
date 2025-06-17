@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥傷害計算器 - 完整版</title>
+    <title>戰鬥傷害計算器 - 穩健版</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,19 +31,42 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .debug-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
     <!-- 載入指示器 -->
     <div id="loading" class="fixed inset-0 flex items-center justify-center z-50">
-        <div class="card-gradient rounded-lg p-8 text-center text-white max-w-md mx-4">
+        <div class="card-gradient rounded-lg p-8 text-center text-white max-w-lg mx-4">
             <div class="loading-spinner mx-auto mb-4"></div>
             <h2 class="text-xl font-bold mb-2">載入戰鬥計算器</h2>
-            <p id="loadingStatus" class="text-sm opacity-80">載入數據庫...</p>
+            <p id="loadingStatus" class="text-sm opacity-80">檢查系統環境...</p>
             <div class="w-full bg-white bg-opacity-20 rounded-full h-2 mt-4">
                 <div id="progressBar" class="bg-white h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
+            
+            <!-- 除錯資訊 -->
+            <div class="debug-info text-left text-xs">
+                <div class="text-yellow-300 mb-2">🔍 載入狀態檢查:</div>
+                <div id="debugInfo"></div>
+            </div>
+            
+            <!-- 錯誤資訊 -->
             <div id="errorMessage" class="mt-4 p-3 bg-red-500 bg-opacity-20 rounded text-red-200 text-sm hidden"></div>
+            
+            <!-- 手動載入按鈕 -->
+            <button id="retryBtn" class="hidden mt-4 px-4 py-2 bg-white bg-opacity-20 rounded hover:bg-opacity-30 transition-all">
+                🔄 重試載入
+            </button>
         </div>
     </div>
 
@@ -53,7 +76,26 @@
             <!-- 標題 -->
             <div class="card-gradient rounded-lg p-6 mb-6 text-white text-center">
                 <h1 class="text-3xl font-bold mb-2">⚔️ 戰鬥傷害計算器</h1>
-                <p class="opacity-80">使用完整數據庫 - 精確計算</p>
+                <p class="opacity-80">完整數據庫版本</p>
+            </div>
+
+            <!-- 快速測試面板 -->
+            <div class="card-gradient rounded-lg p-4 mb-6 text-white">
+                <h3 class="text-lg font-bold mb-3">🧪 快速測試</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="quickTest1()" class="py-2 px-4 bg-blue-500 bg-opacity-30 rounded hover:bg-opacity-50 transition-all">
+                        測試單卡計算
+                    </button>
+                    <button onclick="quickTest2()" class="py-2 px-4 bg-green-500 bg-opacity-30 rounded hover:bg-opacity-50 transition-all">
+                        測試隊伍計算
+                    </button>
+                    <button onclick="quickTest3()" class="py-2 px-4 bg-purple-500 bg-opacity-30 rounded hover:bg-opacity-50 transition-all">
+                        測試數據載入
+                    </button>
+                </div>
+                <div id="testResults" class="mt-3 p-3 bg-black bg-opacity-20 rounded text-sm font-mono min-h-16">
+                    點擊按鈕進行測試...
+                </div>
             </div>
 
             <!-- 配置面板 -->
@@ -64,13 +106,13 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm mb-2">搭檔</label>
-                            <select id="partnerSelect" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                            <select id="partnerSelect" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30">
                                 <option value="" class="text-gray-800">選擇搭檔</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm mb-2">職業</label>
-                            <select id="professionSelect" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                            <select id="professionSelect" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30">
                                 <option value="" class="text-gray-800">選擇職業</option>
                             </select>
                         </div>
@@ -88,10 +130,6 @@
                         <div>
                             <label class="block text-sm mb-2">星譜匹配: <span id="constValue" class="font-bold">0</span></label>
                             <input type="range" id="constSlider" min="0" max="6" value="0" class="w-full">
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="perfectAlignment" class="text-blue-500">
-                            <label for="perfectAlignment" class="text-sm">完美排列</label>
                         </div>
                     </div>
                 </div>
@@ -112,98 +150,56 @@
                     </div>
                 </div>
 
-                <!-- 快速操作 -->
+                <!-- 結果預覽 -->
                 <div class="card-gradient rounded-lg p-6 text-white">
-                    <h3 class="text-lg font-bold mb-4">🎯 快速操作</h3>
+                    <h3 class="text-lg font-bold mb-4">📊 結果預覽</h3>
                     <div class="space-y-3">
-                        <button id="selectAllSun" class="w-full py-2 px-3 bg-yellow-500 bg-opacity-30 rounded text-sm hover:bg-opacity-50">
-                            ☀️ 全選日卡
-                        </button>
-                        <button id="selectAllMoon" class="w-full py-2 px-3 bg-blue-500 bg-opacity-30 rounded text-sm hover:bg-opacity-50">
-                            🌙 全選月卡
-                        </button>
-                        <button id="clearSelection" class="w-full py-2 px-3 bg-red-500 bg-opacity-30 rounded text-sm hover:bg-opacity-50">
-                            🗑️ 清空選擇
-                        </button>
-                        <div class="text-xs opacity-80 pt-2">
-                            <div>牽絆加成: <span id="bondBonus">+0</span></div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center">
+                            <div class="text-lg font-bold" id="atkDisplay">0</div>
+                            <div class="text-xs opacity-80">⚔️ 攻擊力</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center">
+                            <div class="text-lg font-bold" id="skillDmgDisplay">0</div>
+                            <div class="text-xs opacity-80">💥 技能傷害</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 結果顯示 -->
+            <!-- 詳細結果 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- 屬性面板 -->
+                <!-- 屬性詳情 -->
                 <div class="card-gradient rounded-lg p-6 text-white">
-                    <h3 class="text-lg font-bold mb-4">📊 隊伍屬性</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="hpDisplay">0</div>
-                            <div class="text-xs opacity-80">❤️ 生命</div>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="atkDisplay">0</div>
-                            <div class="text-xs opacity-80">⚔️ 攻擊</div>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="defDisplay">0</div>
-                            <div class="text-xs opacity-80">🛡️ 防禦</div>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="critRateDisplay">0%</div>
-                            <div class="text-xs opacity-80">⚡ 暴擊率</div>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="critDmgDisplay">0%</div>
-                            <div class="text-xs opacity-80">💥 暴擊傷害</div>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
-                            <div class="text-xl font-bold" id="weaknessDisplay">0%</div>
-                            <div class="text-xs opacity-80">🎯 虛弱增傷</div>
-                        </div>
+                    <h3 class="text-lg font-bold mb-4">📋 詳細屬性</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>❤️ 生命: <span id="hpDetail">0</span></div>
+                        <div>⚔️ 攻擊: <span id="atkDetail">0</span></div>
+                        <div>🛡️ 防禦: <span id="defDetail">0</span></div>
+                        <div>⚡ 暴擊率: <span id="critRateDetail">0%</span></div>
+                        <div>💥 暴擊傷害: <span id="critDmgDetail">0%</span></div>
+                        <div>🎯 虛弱增傷: <span id="weaknessDetail">0%</span></div>
                     </div>
                 </div>
 
-                <!-- 傷害面板 -->
+                <!-- 技能傷害詳情 -->
                 <div class="card-gradient rounded-lg p-6 text-white">
-                    <h3 class="text-lg font-bold mb-4">💥 技能傷害</h3>
-                    <div class="space-y-3">
-                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="font-medium">👊 普攻</span>
-                                <div class="text-right">
-                                    <div class="text-sm">一般: <span id="basicNormal">0</span></div>
-                                    <div class="text-sm text-yellow-300">暴擊: <span id="basicCrit">0</span></div>
-                                </div>
-                            </div>
+                    <h3 class="text-lg font-bold mb-4">⚔️ 技能傷害詳情</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>👊 普攻:</span>
+                            <span><span id="basicNormal">0</span> / <span id="basicCrit" class="text-yellow-300">0</span></span>
                         </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="font-medium">⚡ 主動技</span>
-                                <div class="text-right">
-                                    <div class="text-sm">一般: <span id="skill1Normal">0</span></div>
-                                    <div class="text-sm text-yellow-300">暴擊: <span id="skill1Crit">0</span></div>
-                                </div>
-                            </div>
+                        <div class="flex justify-between">
+                            <span>⚡ 主動技:</span>
+                            <span><span id="skill1Normal">0</span> / <span id="skill1Crit" class="text-yellow-300">0</span></span>
                         </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="font-medium">🌟 共鳴技</span>
-                                <div class="text-right">
-                                    <div class="text-sm">一般: <span id="skill2Normal">0</span></div>
-                                    <div class="text-sm text-yellow-300">暴擊: <span id="skill2Crit">0</span></div>
-                                </div>
-                            </div>
+                        <div class="flex justify-between">
+                            <span>🌟 共鳴技:</span>
+                            <span><span id="skill2Normal">0</span> / <span id="skill2Crit" class="text-yellow-300">0</span></span>
                         </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="font-medium">💫 誓約技</span>
-                                <div class="text-right">
-                                    <div class="text-sm">一般: <span id="ultimateNormal">0</span></div>
-                                    <div class="text-sm text-yellow-300">暴擊: <span id="ultimateCrit">0</span></div>
-                                </div>
-                            </div>
+                        <div class="flex justify-between">
+                            <span>💫 誓約技:</span>
+                            <span><span id="ultimateNormal">0</span> / <span id="ultimateCrit" class="text-yellow-300">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -211,37 +207,81 @@
 
             <!-- 狀態信息 -->
             <div class="card-gradient rounded-lg p-4 mt-6 text-white text-center">
-                <p id="statusInfo" class="text-sm opacity-80">載入中...</p>
+                <p id="statusInfo" class="text-sm opacity-80">系統就緒</p>
             </div>
         </div>
     </div>
 
-    <!-- 載入計算器模塊 - 正確的載入順序 -->
-    <script src="js/data/cardDatabase.js"></script>
-    <script src="js/calculators/baseStatsCalculator.js"></script>
-    <script src="js/calculators/bonusCalculator.js"></script>
-    <script src="js/utils/cardFilters.js"></script>
-    <script src="js/utils/partnerProfessionUtils.js"></script>
-    <script src="js/systems/coreSystem.js"></script>
-    <script src="js/calculators/teamCalculator.js"></script>
-    <script src="js/main.js"></script>
-
+    <!-- 內嵌基礎數據備援 -->
     <script>
-        // 應用狀態
-        let appData = {
-            partners: [],
-            professions: [],
-            cards: [],
-            selectedPartner: '',
-            selectedProfession: '',
-            selectedCards: [],
-            bondLevel: 25,
-            constellationLevel: 0,
-            perfectAlignment: false,
-            calc: null
+        // 備援數據，當外部模塊載入失敗時使用
+        const fallbackData = {
+            partners: [
+                { id: 'lishen', name: '黎深' },
+                { id: 'qinche', name: '秦徹' },
+                { id: 'shenxinghui', name: '沈星回' },
+                { id: 'xiayizhou', name: '夏以晝' },
+                { id: 'qiyu', name: '祁煜' }
+            ],
+            professions: {
+                'lishen': [
+                    { id: 'eternal_prophet', name: '永恆先知' },
+                    { id: 'jiuli_commander', name: '九黎司命' }
+                ],
+                'qinche': [
+                    { id: 'endless_raider', name: '無盡掠奪者' },
+                    { id: 'abyss_master', name: '深淵主宰' }
+                ],
+                'shenxinghui': [
+                    { id: 'light_chaser', name: '逐光騎士' },
+                    { id: 'light_hunter', name: '光獵' }
+                ],
+                'xiayizhou': [
+                    { id: 'fleet_officer', name: '遠空執艦官' },
+                    { id: 'weapon_x02', name: '終極兵器X-02' }
+                ],
+                'qiyu': [
+                    { id: 'deep_sea_diver', name: '深海潛行者' },
+                    { id: 'tidal_god', name: '潮汐之神' }
+                ]
+            },
+            cards: {
+                'lishen': [
+                    { name: '永恆封塵', category: '日卡', type: 'defense' },
+                    { name: '永恆心役', category: '日卡', type: 'defense' },
+                    { name: '擁雪見緣', category: '日卡', type: 'attack' },
+                    { name: '擁雪未眠', category: '日卡', type: 'attack' },
+                    { name: '失序', category: '月卡', type: 'defense' },
+                    { name: '抵此心上', category: '月卡', type: 'attack' }
+                ],
+                'qinche': [
+                    { name: '掠心相授', category: '日卡', type: 'attack' },
+                    { name: '掠心奪味', category: '日卡', type: 'attack' },
+                    { name: '深淵霞暈', category: '日卡', type: 'life' },
+                    { name: '深淵秘印', category: '日卡', type: 'life' }
+                ],
+                'shenxinghui': [
+                    { name: '逐光破影', category: '日卡', type: 'attack' },
+                    { name: '逐光迷心', category: '日卡', type: 'attack' },
+                    { name: '末夜心聲', category: '日卡', type: 'defense' },
+                    { name: '末夜雨意', category: '日卡', type: 'defense' }
+                ],
+                'xiayizhou': [
+                    { name: '遠空迷航', category: '日卡', type: 'defense' },
+                    { name: '遠空棠雨', category: '日卡', type: 'defense' },
+                    { name: '寂路同赴', category: '日卡', type: 'attack' },
+                    { name: '寂路不歸', category: '日卡', type: 'attack' }
+                ],
+                'qiyu': [
+                    { name: '深海成諾', category: '日卡', type: 'attack' },
+                    { name: '深海淬金', category: '日卡', type: 'attack' },
+                    { name: '神殿日落', category: '日卡', type: 'life' },
+                    { name: '神殿秘約', category: '日卡', type: 'life' }
+                ]
+            }
         };
 
-        // 技能倍率數據
+        // 技能倍率
         const skillMultipliers = {
             'eternal_prophet': { basic: 0.8, skill1: 2.2, skill2: 3.8, ultimate: 5.5 },
             'jiuli_commander': { basic: 1.0, skill1: 2.5, skill2: 4.2, ultimate: 6.0 },
@@ -255,13 +295,34 @@
             'tidal_god': { basic: 0.85, skill1: 2.1, skill2: 3.6, ultimate: 5.3 }
         };
 
+        // 應用狀態
+        let appData = {
+            calc: null,
+            usingFallback: false,
+            selectedPartner: '',
+            selectedProfession: '',
+            selectedCards: [],
+            bondLevel: 25,
+            constellationLevel: 0
+        };
+
+        // 除錯資訊
+        function updateDebugInfo(message) {
+            const debugEl = document.getElementById('debugInfo');
+            if (debugEl) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugEl.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
         // 更新狀態
         function updateStatus(message) {
             const statusEl = document.getElementById('loadingStatus');
             const statusInfo = document.getElementById('statusInfo');
             if (statusEl) statusEl.textContent = message;
             if (statusInfo) statusInfo.textContent = message;
-            console.log('📍', message);
+            updateDebugInfo(message);
         }
 
         function updateProgress(percent) {
@@ -271,37 +332,54 @@
 
         function showError(message) {
             const errorEl = document.getElementById('errorMessage');
+            const retryBtn = document.getElementById('retryBtn');
             if (errorEl) {
                 errorEl.textContent = message;
                 errorEl.classList.remove('hidden');
             }
-            console.error('❌', message);
+            if (retryBtn) {
+                retryBtn.classList.remove('hidden');
+            }
+            updateDebugInfo(`❌ 錯誤: ${message}`);
         }
 
-        // 等待計算器初始化
-        function waitForCalculator() {
+        // 檢查模塊載入狀態
+        function checkModuleStatus() {
+            const status = {
+                cardDatabase: !!window.cardDatabase,
+                baseStatsCalculator: !!window.baseStatsCalculator,
+                bonusCalculator: !!window.bonusCalculator,
+                teamCalculator: !!window.teamCalculator,
+                calc: !!window.calc,
+                calcReady: !!(window.calc && window.calc.getAllPartners)
+            };
+
+            updateDebugInfo(`模塊狀態: ${JSON.stringify(status, null, 2)}`);
+            return status;
+        }
+
+        // 嘗試初始化計算器
+        function attemptCalculatorInit() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
-                const maxAttempts = 100;
+                const maxAttempts = 30; // 減少嘗試次數
                 
                 const check = () => {
                     attempts++;
+                    const status = checkModuleStatus();
                     
-                    // 檢查是否所有必要的對象都已載入
-                    if (window.calc && 
-                        window.cardDatabase && 
-                        typeof window.calc.getAllPartners === 'function') {
-                        
-                        console.log('✅ 計算器系統已就緒');
+                    if (status.calcReady) {
+                        updateDebugInfo('✅ 計算器系統就緒');
                         appData.calc = window.calc;
-                        resolve();
+                        appData.usingFallback = false;
+                        resolve(true);
                     } else if (attempts >= maxAttempts) {
-                        const error = '計算器初始化超時';
-                        console.error('❌', error);
-                        showError(error);
-                        reject(new Error(error));
+                        updateDebugInfo('⚠️ 切換到備援模式');
+                        appData.usingFallback = true;
+                        resolve(false);
                     } else {
-                        setTimeout(check, 100);
+                        updateDebugInfo(`檢查計算器狀態 (${attempts}/${maxAttempts})`);
+                        setTimeout(check, 200);
                     }
                 };
                 check();
@@ -311,27 +389,26 @@
         // 初始化應用
         async function initApp() {
             try {
-                updateStatus('等待計算器載入...');
+                updateStatus('檢查模塊載入狀態...');
                 updateProgress(20);
                 
-                await waitForCalculator();
-                updateProgress(50);
+                checkModuleStatus();
                 
-                updateStatus('載入遊戲數據...');
+                updateStatus('嘗試初始化計算器...');
+                updateProgress(40);
                 
-                // 載入基礎數據
-                appData.partners = appData.calc.getAllPartners() || [];
-                console.log('📊 載入搭檔數據:', appData.partners.length);
-                
+                const calcReady = await attemptCalculatorInit();
                 updateProgress(70);
-                updateStatus('初始化界面...');
                 
-                // 初始化界面
+                if (calcReady) {
+                    updateStatus('使用完整計算器系統');
+                } else {
+                    updateStatus('使用備援數據系統');
+                }
+                
+                updateStatus('初始化界面...');
                 initializeUI();
                 bindEvents();
-                
-                updateProgress(90);
-                await new Promise(resolve => setTimeout(resolve, 200));
                 
                 updateProgress(100);
                 updateStatus('初始化完成！');
@@ -340,26 +417,39 @@
                 setTimeout(() => {
                     document.getElementById('loading').classList.add('hidden');
                     document.getElementById('app').classList.remove('hidden');
-                    updateStatus('選擇搭檔開始計算');
+                    updateStatus('系統就緒 - ' + (appData.usingFallback ? '備援模式' : '完整模式'));
                 }, 300);
 
             } catch (error) {
-                console.error('❌ 初始化失敗:', error);
+                updateDebugInfo(`❌ 初始化失敗: ${error.message}`);
                 showError(`初始化失敗: ${error.message}`);
             }
         }
 
         // 初始化界面
         function initializeUI() {
-            // 載入搭檔選項
             const partnerSelect = document.getElementById('partnerSelect');
-            appData.partners.forEach(partner => {
-                const option = document.createElement('option');
-                option.value = partner.id;
-                option.textContent = partner.name;
-                option.className = 'text-gray-800';
-                partnerSelect.appendChild(option);
-            });
+            
+            if (appData.usingFallback) {
+                // 使用備援數據
+                fallbackData.partners.forEach(partner => {
+                    const option = document.createElement('option');
+                    option.value = partner.id;
+                    option.textContent = partner.name;
+                    option.className = 'text-gray-800';
+                    partnerSelect.appendChild(option);
+                });
+            } else {
+                // 使用完整計算器
+                const partners = appData.calc.getAllPartners() || [];
+                partners.forEach(partner => {
+                    const option = document.createElement('option');
+                    option.value = partner.id;
+                    option.textContent = partner.name;
+                    option.className = 'text-gray-800';
+                    partnerSelect.appendChild(option);
+                });
+            }
         }
 
         // 綁定事件
@@ -368,34 +458,27 @@
             document.getElementById('professionSelect').addEventListener('change', handleProfessionChange);
             document.getElementById('bondSlider').addEventListener('input', handleBondChange);
             document.getElementById('constSlider').addEventListener('input', handleConstChange);
-            document.getElementById('perfectAlignment').addEventListener('change', handlePerfectAlignmentChange);
-            
             document.getElementById('quickSetup').addEventListener('click', quickSetup);
-            document.getElementById('selectAllSun').addEventListener('click', () => selectCardsByCategory('日卡'));
-            document.getElementById('selectAllMoon').addEventListener('click', () => selectCardsByCategory('月卡'));
-            document.getElementById('clearSelection').addEventListener('click', clearCardSelection);
+            document.getElementById('retryBtn').addEventListener('click', () => {
+                location.reload();
+            });
         }
 
-        // 事件處理函數
+        // 事件處理
         function handlePartnerChange(e) {
             appData.selectedPartner = e.target.value;
             updateProfessions();
             updateCards();
-            updateStatus(appData.selectedPartner ? 
-                `已選擇搭檔: ${appData.partners.find(p => p.id === appData.selectedPartner)?.name}` : 
-                '選擇搭檔開始計算');
         }
 
         function handleProfessionChange(e) {
             appData.selectedProfession = e.target.value;
             calculate();
-            updateStatus(appData.selectedProfession ? '職業已選擇，開始計算傷害' : '請選擇職業');
         }
 
         function handleBondChange(e) {
             appData.bondLevel = parseInt(e.target.value);
             document.getElementById('bondValue').textContent = appData.bondLevel;
-            updateBondBonus();
             calculate();
         }
 
@@ -405,66 +488,65 @@
             calculate();
         }
 
-        function handlePerfectAlignmentChange(e) {
-            appData.perfectAlignment = e.target.checked;
-            calculate();
-        }
-
-        // 更新職業選項
+        // 更新職業
         function updateProfessions() {
             const professionSelect = document.getElementById('professionSelect');
             professionSelect.innerHTML = '<option value="" class="text-gray-800">選擇職業</option>';
             
-            if (appData.selectedPartner && appData.calc) {
-                try {
-                    const professions = appData.calc.getProfessions(appData.selectedPartner) || [];
-                    appData.professions = professions;
-                    
-                    professions.forEach(profession => {
-                        const option = document.createElement('option');
-                        option.value = profession.id;
-                        option.textContent = profession.name;
-                        option.className = 'text-gray-800';
-                        professionSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('獲取職業失敗:', error);
-                }
+            if (!appData.selectedPartner) return;
+            
+            let professions = [];
+            
+            if (appData.usingFallback) {
+                professions = fallbackData.professions[appData.selectedPartner] || [];
+            } else if (appData.calc) {
+                professions = appData.calc.getProfessions(appData.selectedPartner) || [];
             }
+            
+            professions.forEach(profession => {
+                const option = document.createElement('option');
+                option.value = profession.id;
+                option.textContent = profession.name;
+                option.className = 'text-gray-800';
+                professionSelect.appendChild(option);
+            });
         }
 
-        // 更新卡片列表
+        // 更新卡片
         function updateCards() {
             const cardList = document.getElementById('cardList');
             cardList.innerHTML = '';
             appData.selectedCards = [];
             
-            if (appData.selectedPartner && appData.calc) {
-                try {
-                    const cards = appData.calc.getCards(appData.selectedPartner) || [];
-                    appData.cards = cards;
-                    
-                    cards.forEach((card, index) => {
-                        const cardElement = document.createElement('label');
-                        cardElement.className = 'flex items-center space-x-2 cursor-pointer hover:bg-white hover:bg-opacity-10 rounded p-2 text-sm';
-                        cardElement.innerHTML = `
-                            <input type="checkbox" class="text-blue-500" data-card-index="${index}">
-                            <span class="flex-1">${card.name}</span>
-                            <span class="text-xs opacity-60">${card.category}</span>
-                        `;
-                        
-                        cardElement.querySelector('input').addEventListener('change', updateSelectedCards);
-                        cardList.appendChild(cardElement);
-                    });
-                } catch (error) {
-                    console.error('獲取卡片失敗:', error);
-                }
+            if (!appData.selectedPartner) return;
+            
+            let cards = [];
+            
+            if (appData.usingFallback) {
+                cards = fallbackData.cards[appData.selectedPartner] || [];
+            } else if (appData.calc) {
+                cards = appData.calc.getCards(appData.selectedPartner) || [];
             }
             
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('label');
+                cardElement.className = 'flex items-center space-x-2 cursor-pointer hover:bg-white hover:bg-opacity-10 rounded p-2 text-sm';
+                cardElement.innerHTML = `
+                    <input type="checkbox" class="text-blue-500" data-card-index="${index}">
+                    <span class="flex-1">${card.name}</span>
+                    <span class="text-xs opacity-60">${card.category}</span>
+                `;
+                
+                cardElement.querySelector('input').addEventListener('change', updateSelectedCards);
+                cardList.appendChild(cardElement);
+            });
+            
+            // 更新卡片數據引用
+            appData.cards = cards;
             updateSelectedCount();
         }
 
-        // 更新選中的卡片
+        // 更新選中卡片
         function updateSelectedCards() {
             appData.selectedCards = [];
             const checkboxes = document.querySelectorAll('#cardList input[type="checkbox"]:checked');
@@ -480,61 +562,27 @@
             calculate();
         }
 
-        // 更新選中卡片計數
+        // 更新選中計數
         function updateSelectedCount() {
             document.getElementById('selectedCount').textContent = appData.selectedCards.length;
-        }
-
-        // 更新牽絆加成顯示
-        function updateBondBonus() {
-            if (appData.calc && appData.calc.calculateBond) {
-                const bonus = appData.calc.calculateBond(appData.bondLevel);
-                document.getElementById('bondBonus').textContent = 
-                    `+${bonus.hp}HP +${bonus.atk}ATK +${bonus.def}DEF`;
-            }
         }
 
         // 快速設置
         function quickSetup() {
             document.getElementById('bondSlider').value = 220;
             document.getElementById('constSlider').value = 6;
-            document.getElementById('perfectAlignment').checked = true;
-            
             appData.bondLevel = 220;
             appData.constellationLevel = 6;
-            appData.perfectAlignment = true;
-            
             document.getElementById('bondValue').textContent = '220';
             document.getElementById('constValue').textContent = '6';
             
             // 全選卡片
             const checkboxes = document.querySelectorAll('#cardList input[type="checkbox"]');
             checkboxes.forEach(cb => cb.checked = true);
-            
-            updateSelectedCards();
-            updateBondBonus();
-            updateStatus('已設置為滿配！');
-        }
-
-        // 按類別選擇卡片
-        function selectCardsByCategory(category) {
-            const checkboxes = document.querySelectorAll('#cardList input[type="checkbox"]');
-            checkboxes.forEach(cb => {
-                const cardIndex = parseInt(cb.dataset.cardIndex);
-                const card = appData.cards[cardIndex];
-                cb.checked = card && card.category === category;
-            });
             updateSelectedCards();
         }
 
-        // 清空卡片選擇
-        function clearCardSelection() {
-            const checkboxes = document.querySelectorAll('#cardList input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
-            updateSelectedCards();
-        }
-
-        // 主計算函數
+        // 計算函數
         function calculate() {
             if (!appData.selectedPartner || !appData.selectedProfession || appData.selectedCards.length === 0) {
                 resetDisplay();
@@ -542,8 +590,13 @@
             }
 
             try {
-                // 使用真正的計算器
-                if (appData.calc && appData.calc.calculateTeam) {
+                let teamStats;
+                
+                if (appData.usingFallback) {
+                    // 備援計算
+                    teamStats = calculateFallback();
+                } else if (appData.calc) {
+                    // 完整計算
                     const teamConfig = {
                         cardNames: appData.selectedCards.map(card => card.name),
                         levels: new Array(appData.selectedCards.length).fill(80),
@@ -551,40 +604,66 @@
                         advancements: new Array(appData.selectedCards.length).fill(3),
                         partnerBondLevel: appData.bondLevel,
                         userConstellationMatch: appData.constellationLevel,
-                        userPerfectAlignment: appData.perfectAlignment
+                        userPerfectAlignment: false
                     };
-
-                    const teamStats = appData.calc.calculateTeam(teamConfig);
-                    
-                    if (teamStats) {
-                        // 更新屬性顯示
-                        document.getElementById('hpDisplay').textContent = teamStats.hp.toLocaleString();
-                        document.getElementById('atkDisplay').textContent = teamStats.atk.toLocaleString();
-                        document.getElementById('defDisplay').textContent = teamStats.def.toLocaleString();
-                        document.getElementById('critRateDisplay').textContent = teamStats.criticalRate.toFixed(1) + '%';
-                        document.getElementById('critDmgDisplay').textContent = teamStats.criticalDamage.toFixed(1) + '%';
-                        document.getElementById('weaknessDisplay').textContent = teamStats.weaknessDamage.toFixed(1) + '%';
-                        
-                        // 計算技能傷害
-                        calculateSkillDamage(teamStats);
-                        
-                        updateStatus(`計算完成 - ${appData.selectedCards.length}張卡片，攻擊力: ${teamStats.atk.toLocaleString()}`);
-                    }
+                    teamStats = appData.calc.calculateTeam(teamConfig);
                 }
+                
+                if (teamStats) {
+                    updateDisplay(teamStats);
+                }
+                
             } catch (error) {
-                console.error('計算錯誤:', error);
-                updateStatus('計算發生錯誤');
+                updateDebugInfo(`計算錯誤: ${error.message}`);
             }
         }
 
-        // 計算技能傷害
-        function calculateSkillDamage(teamStats) {
+        // 備援計算
+        function calculateFallback() {
+            const cardCount = appData.selectedCards.length;
+            const bondBonus = Math.floor(appData.bondLevel / 5) * 10;
+            const constBonus = appData.constellationLevel * 50;
+            
+            const baseAtk = 200 + (cardCount * 150) + bondBonus + constBonus;
+            const baseHp = baseAtk * 8;
+            const baseDef = baseAtk * 0.6;
+            const critRate = 15 + appData.constellationLevel * 2;
+            const critDamage = 50 + appData.constellationLevel * 10;
+            const weaknessDamage = appData.constellationLevel * 5;
+            
+            return {
+                hp: Math.floor(baseHp),
+                atk: Math.floor(baseAtk),
+                def: Math.floor(baseDef),
+                criticalRate: critRate,
+                criticalDamage: critDamage,
+                weaknessDamage: weaknessDamage
+            };
+        }
+
+        // 更新顯示
+        function updateDisplay(teamStats) {
+            // 更新主要屬性
+            document.getElementById('atkDisplay').textContent = teamStats.atk.toLocaleString();
+            
+            // 計算技能傷害
             const multipliers = skillMultipliers[appData.selectedProfession] || 
                               { basic: 1.0, skill1: 2.5, skill2: 4.0, ultimate: 6.0 };
-
+            const skillDmg = Math.floor(teamStats.atk * multipliers.ultimate);
+            document.getElementById('skillDmgDisplay').textContent = skillDmg.toLocaleString();
+            
+            // 更新詳細屬性
+            document.getElementById('hpDetail').textContent = teamStats.hp.toLocaleString();
+            document.getElementById('atkDetail').textContent = teamStats.atk.toLocaleString();
+            document.getElementById('defDetail').textContent = teamStats.def.toLocaleString();
+            document.getElementById('critRateDetail').textContent = teamStats.criticalRate.toFixed(1) + '%';
+            document.getElementById('critDmgDetail').textContent = teamStats.criticalDamage.toFixed(1) + '%';
+            document.getElementById('weaknessDetail').textContent = teamStats.weaknessDamage.toFixed(1) + '%';
+            
+            // 更新技能傷害
             const baseAtk = teamStats.atk;
-            const critDamage = 100 + teamStats.criticalDamage; // 轉換為乘數
-
+            const critDamage = 100 + teamStats.criticalDamage;
+            
             ['basic', 'skill1', 'skill2', 'ultimate'].forEach(skill => {
                 const multiplier = multipliers[skill];
                 const normalDmg = Math.floor(baseAtk * multiplier);
@@ -593,14 +672,16 @@
                 document.getElementById(`${skill}Normal`).textContent = normalDmg.toLocaleString();
                 document.getElementById(`${skill}Crit`).textContent = critDmg.toLocaleString();
             });
+            
+            updateStatus(`計算完成 - ${appData.selectedCards.length}張卡片 (${appData.usingFallback ? '備援模式' : '完整模式'})`);
         }
 
         // 重置顯示
         function resetDisplay() {
-            ['hpDisplay', 'atkDisplay', 'defDisplay'].forEach(id => {
+            ['atkDisplay', 'skillDmgDisplay', 'hpDetail', 'atkDetail', 'defDetail'].forEach(id => {
                 document.getElementById(id).textContent = '0';
             });
-            ['critRateDisplay', 'critDmgDisplay', 'weaknessDisplay'].forEach(id => {
+            ['critRateDetail', 'critDmgDetail', 'weaknessDetail'].forEach(id => {
                 document.getElementById(id).textContent = '0%';
             });
             ['basicNormal', 'basicCrit', 'skill1Normal', 'skill1Crit', 
@@ -609,25 +690,119 @@
             });
         }
 
+        // 快速測試函數
+        function quickTest1() {
+            const testResults = document.getElementById('testResults');
+            try {
+                if (appData.calc && appData.calc.calculateCard) {
+                    const result = appData.calc.calculateCard('擁雪見緣', { level: 80, advancement: 3 });
+                    testResults.textContent = `✅ 單卡計算成功: 攻擊${result.atk}`;
+                } else {
+                    testResults.textContent = '⚠️ 完整計算器不可用，使用備援模式';
+                }
+            } catch (error) {
+                testResults.textContent = `❌ 單卡計算失敗: ${error.message}`;
+            }
+        }
+
+        function quickTest2() {
+            const testResults = document.getElementById('testResults');
+            try {
+                if (appData.calc && appData.calc.calculateTeam) {
+                    const config = {
+                        cardNames: ['擁雪見緣', '永恆封塵'],
+                        levels: [80, 80],
+                        breakthroughs: [1, 1],
+                        advancements: [3, 3],
+                        partnerBondLevel: 25
+                    };
+                    const result = appData.calc.calculateTeam(config);
+                    testResults.textContent = `✅ 隊伍計算成功: 總攻擊${result.atk}`;
+                } else {
+                    const result = calculateFallback();
+                    testResults.textContent = `⚠️ 備援計算: 攻擊${result.atk}`;
+                }
+            } catch (error) {
+                testResults.textContent = `❌ 隊伍計算失敗: ${error.message}`;
+            }
+        }
+
+        function quickTest3() {
+            const testResults = document.getElementById('testResults');
+            try {
+                const status = checkModuleStatus();
+                const moduleCount = Object.values(status).filter(Boolean).length;
+                testResults.textContent = `📊 模塊載入狀態: ${moduleCount}/6 個模塊已載入`;
+            } catch (error) {
+                testResults.textContent = `❌ 數據載入檢查失敗: ${error.message}`;
+            }
+        }
+
         // 啟動應用
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 啟動戰鬥計算器 - 使用完整數據庫');
+            updateDebugInfo('🚀 開始載入戰鬥計算器');
+            updateStatus('檢查系統環境...');
+            
+            // 延遲啟動，給模塊載入時間
             setTimeout(() => {
                 initApp().catch(error => {
-                    console.error('❌ 啟動失敗:', error);
-                    updateStatus('啟動失敗');
-                    showError(`啟動失敗: ${error.message}<br>請檢查 JS 檔案是否正確載入`);
+                    updateDebugInfo(`❌ 啟動失敗: ${error.message}`);
+                    showError(`啟動失敗: ${error.message}`);
                 });
-            }, 100);
+            }, 1000); // 增加到1秒延遲
         });
 
         // 超時處理
         setTimeout(() => {
-            if (document.getElementById('loading') && !document.getElementById('loading').classList.contains('hidden')) {
-                updateStatus('載入超時');
-                showError('載入超時，可能原因：<br>1. JS 檔案路徑錯誤<br>2. 檔案載入失敗<br>3. 計算器初始化異常<br><br>請檢查瀏覽器控制台獲取詳細錯誤訊息');
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl && !loadingEl.classList.contains('hidden')) {
+                updateStatus('載入超時，切換到備援模式');
+                // 強制使用備援模式
+                appData.usingFallback = true;
+                initializeUI();
+                bindEvents();
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                updateStatus('備援模式已啟動');
             }
-        }, 15000);
+        }, 8000); // 8秒超時
+    </script>
+
+    <!-- 嘗試載入外部模塊 -->
+    <script>
+        // 動態載入模塊，如果失敗則繼續
+        const modules = [
+            'js/data/cardDatabase.js',
+            'js/calculators/baseStatsCalculator.js',
+            'js/calculators/bonusCalculator.js',
+            'js/utils/cardFilters.js',
+            'js/utils/partnerProfessionUtils.js',
+            'js/systems/coreSystem.js',
+            'js/calculators/teamCalculator.js',
+            'js/main.js'
+        ];
+
+        function loadModulesSafely() {
+            modules.forEach((modulePath, index) => {
+                const script = document.createElement('script');
+                script.src = modulePath;
+                script.async = false;
+                
+                script.onload = () => {
+                    updateDebugInfo(`✅ 已載入: ${modulePath}`);
+                };
+                
+                script.onerror = () => {
+                    updateDebugInfo(`❌ 載入失敗: ${modulePath}`);
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+
+        // 開始載入模塊
+        loadModulesSafely();
     </script>
 </body>
 </html>
